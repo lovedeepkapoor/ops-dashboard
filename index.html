@@ -142,6 +142,28 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .ui-title{font-size:13px;font-weight:500;color:#92400e}
 .ui-sub{font-size:11px;color:#b45309;margin-top:2px}
 
+/* TEAM MGMT */
+.team-row-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #f3f4f6}
+.team-row-item:last-child{border-bottom:none}
+.tm-info{flex:1;min-width:0}
+.tm-name{font-size:13px;font-weight:600;color:#111}
+.tm-sub{font-size:11px;color:#888;margin-top:2px}
+.tm-avail{font-size:11px;color:#888;margin-top:2px;display:flex;align-items:center;gap:5px}
+.tm-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.tm-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.btn-edit-sm{padding:4px 12px;border-radius:6px;border:1px solid #b3d4f0;background:#EAF3FB;color:#185FA5;font-size:12px;cursor:pointer;font-weight:500}
+.btn-del-sm{padding:4px 12px;border-radius:6px;border:1px solid #fca5a5;background:#fee2e2;color:#991b1b;font-size:12px;cursor:pointer;font-weight:500}
+.btn-edit-sm:hover{background:#dbeafe}
+.btn-del-sm:hover{background:#fecaca}
+.team-form-wrap{background:#f9fafb;border-radius:10px;padding:14px;margin-bottom:14px;border:1.5px solid #e5e5e5}
+.team-form-wrap.editing{border-color:#378ADD;background:#f0f7ff}
+.search-inp{width:100%;padding:8px 12px;border-radius:8px;border:1.5px solid #e5e5e5;font-size:13px;color:#111;outline:none;margin-bottom:12px}
+.search-inp:focus{border-color:#378ADD}
+.tm-stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.tm-stat{background:#fff;border-radius:10px;padding:10px;text-align:center;border:1px solid #e5e5e5}
+.tm-stat-v{font-size:18px;font-weight:600;color:#111}
+.tm-stat-l{font-size:11px;color:#888;margin-top:2px}
+
 /* LOG */
 .log-list{list-style:none}
 .log-list li{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:12px;align-items:flex-start}
@@ -237,13 +259,31 @@ let data     = { challans: [], jobs: [], deliveries: [], log: [] };
 let parsedItems = [];
 let waChats  = {};
 
-const TEAMS = [
-  { id:1, name:"Team Alpha", lead:"Ravi Kumar",    phone:"+919876500001", av:"ri-o", status:"available", avail:"08–17" },
-  { id:2, name:"Team Beta",  lead:"Suresh Singh",  phone:"+919876500002", av:"ri-s", status:"available", avail:"09–18" },
-  { id:3, name:"Team Gamma", lead:"Ajay Sharma",   phone:"+919876500003", av:"ri-sv",status:"available", avail:"07–16" },
-  { id:4, name:"Team Delta", lead:"Neha Verma",    phone:"+919876500004", av:"ri-d", status:"available", avail:"10–19" },
-  { id:5, name:"Team Echo",  lead:"Mohan Das",     phone:"+919876500005", av:"ri-o", status:"available", avail:"09–18" },
+let TEAMS = [
+  { id:1, name:"Team Alpha", lead:"Ravi Kumar",   phone:"+919876500001", members:3, spec:"Electrical", status:"available", from:"08:00", until:"17:00", notes:"" },
+  { id:2, name:"Team Beta",  lead:"Suresh Singh", phone:"+919876500002", members:2, spec:"Plumbing",   status:"available", from:"09:00", until:"18:00", notes:"" },
+  { id:3, name:"Team Gamma", lead:"Ajay Sharma",  phone:"+919876500003", members:4, spec:"Civil",      status:"available", from:"07:00", until:"16:00", notes:"" },
+  { id:4, name:"Team Delta", lead:"Neha Verma",   phone:"+919876500004", members:2, spec:"Carpentry",  status:"available", from:"10:00", until:"19:00", notes:"" },
+  { id:5, name:"Team Echo",  lead:"Mohan Das",    phone:"+919876500005", members:3, spec:"General",    status:"available", from:"09:00", until:"18:00", notes:"" },
 ];
+let teamNextId = 6;
+let teamEditId = null;
+let teamDelId  = null;
+
+const AV_COLORS = [
+  {bg:"#dbeafe",color:"#1d4ed8"},{bg:"#dcfce7",color:"#166534"},
+  {bg:"#ede9fe",color:"#5b21b6"},{bg:"#fef3c7",color:"#92400e"},
+  {bg:"#fee2e2",color:"#991b1b"},{bg:"#e0f2fe",color:"#0369a1"},
+  {bg:"#f3e8ff",color:"#6b21a8"},{bg:"#fce7f3",color:"#9d174d"},
+];
+function tmColor(idx){ return AV_COLORS[idx % AV_COLORS.length]; }
+function tmInitials(name){ return name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase(); }
+function tmStatusBadge(s){
+  const m={"on-site":"b-green","available":"b-blue","in-transit":"b-amber","off":"b-gray"};
+  const l={"on-site":"On site","available":"Available","in-transit":"In transit","off":"Off duty"};
+  return `<span class="badge ${m[s]||"b-gray"}">${l[s]||s}</span>`;
+}
+function tmDotColor(s){ return s==="on-site"?"#16a34a":s==="available"?"#2563eb":s==="in-transit"?"#d97706":"#9ca3af"; }
 
 const DELIVERY_PERSONS = [
   { id:1, name:"Ramesh Driver",   phone:"+919876511001" },
@@ -450,11 +490,7 @@ function ownerTab(idx) {
     <div class="card"><div class="card-title">Recent challans</div>${challanRows((data.challans||[]).slice(0,5))}</div>`;
   if (idx===1) return `<div class="card"><div class="card-title">All challans</div>${challanRows(data.challans||[])}</div>`;
   if (idx===2) return `<div class="card"><div class="card-title">Karigar jobs</div>${jobCards(data.jobs||[])}</div>`;
-  if (idx===3) return `<div class="card"><div class="card-title">Teams</div>${TEAMS.map(t=>`<div class="row">
-    <div class="av ${t.av}" style="background:#e5e5e5;font-size:11px">${t.name.split(" ").map(w=>w[0]).join("").slice(0,2)}</div>
-    <div class="row-info"><div class="row-name">${t.name} · ${t.lead}</div><div class="row-sub">${t.phone} · ${t.avail}</div></div>
-    <span class="badge b-green">${t.status}</span>
-  </div>`).join("")}</div>`;
+  if (idx===3) return teamManagementHTML();
   if (idx===4) return `<div class="card"><div class="card-title">Deliveries</div>${(data.deliveries||[]).map(d=>`<div class="row">
     <div class="row-info"><div class="row-name">${d.id} — ${d.challan}</div><div class="row-sub">${d.person} · ${d.vehicle||""}</div></div>
     ${badgeDelivery(d.status)}
@@ -545,7 +581,7 @@ function supervisorTab(idx) {
       <div class="card-title">Assign karigar to challan</div>
       <div class="fg">
         <div><label>Challan</label><select id="sv-ch" onchange="svFill()">${(data.challans||[]).map(c=>`<option value="${c.id}">${c.id} — ${c.client} [${c.status}]</option>`).join("")}</select></div>
-        <div><label>Team / karigar</label><select id="sv-team">${TEAMS.map(t=>`<option value="${t.id}">${t.name} — ${t.lead}</option>`).join("")}</select></div>
+        <div><label>Team / karigar</label><select id="sv-team">${TEAMS.map(t=>`<option value="${t.id}">${t.name} — ${t.lead} (${t.status})</option>`).join("")}</select></div>
         <div><label>Work type</label><select id="sv-wtype">
           <option>Electrical installation</option><option>Plumbing</option><option>Civil work</option>
           <option>Fabrication</option><option>Carpentry</option><option>Painting</option>
@@ -977,6 +1013,178 @@ function dConfirmStatus(delivId, status, label) {
 function dWA(msg) {
   const d = (data.deliveries||[])[0];
   openWA(d?d.phone:"", msg);
+}
+
+// ── TEAM MANAGEMENT ──────────────────────────────────────────
+function tmListHTML(withActions=true) {
+  const q = "";
+  if (!TEAMS.length) return `<div style="text-align:center;padding:2rem;color:#888;font-size:13px">No teams yet. Add your first team above.</div>`;
+  return TEAMS.map((t,i) => {
+    const c = tmColor(i);
+    return `<div class="team-row-item">
+      <div class="av" style="background:${c.bg};color:${c.color};width:36px;height:36px;font-size:12px;font-weight:600;flex-shrink:0">${tmInitials(t.name)}</div>
+      <div class="tm-info">
+        <div class="tm-name">${t.name} <span style="font-weight:400;color:#888;font-size:12px">· ${t.lead}</span></div>
+        <div class="tm-sub">${t.spec} · ${t.members} member(s) · ${t.phone}</div>
+        <div class="tm-avail">
+          <div class="tm-dot" style="background:${tmDotColor(t.status)}"></div>
+          <span>${t.from}–${t.until}${t.notes?" · "+t.notes:""}</span>
+        </div>
+      </div>
+      ${tmStatusBadge(t.status)}
+      ${withActions ? `<div class="tm-actions">
+        <button class="btn-edit-sm" onclick="tmStartEdit(${t.id})">Edit</button>
+        <button class="btn-del-sm"  onclick="tmAskDelete(${t.id})">Delete</button>
+      </div>`:""}
+    </div>`;
+  }).join("");
+}
+
+function teamStatsHTML() {
+  const onsite  = TEAMS.filter(t=>t.status==="on-site").length;
+  const avail   = TEAMS.filter(t=>t.status==="available").length;
+  const members = TEAMS.reduce((a,t)=>a+(parseInt(t.members)||0),0);
+  return `<div class="tm-stat-grid">
+    <div class="tm-stat"><div class="tm-stat-v">${TEAMS.length}</div><div class="tm-stat-l">Total teams</div></div>
+    <div class="tm-stat"><div class="tm-stat-v">${onsite}</div><div class="tm-stat-l">On site</div></div>
+    <div class="tm-stat"><div class="tm-stat-v">${avail}</div><div class="tm-stat-l">Available</div></div>
+    <div class="tm-stat"><div class="tm-stat-v">${members}</div><div class="tm-stat-l">Total members</div></div>
+  </div>`;
+}
+
+function teamManagementHTML() {
+  const isEditing = teamEditId !== null;
+  const et = isEditing ? TEAMS.find(t=>t.id===teamEditId) : null;
+  return `
+    ${teamStatsHTML()}
+    <div class="card team-form-wrap ${isEditing?"editing":""}" id="tm-form-card">
+      <div class="card-title" style="font-size:14px;font-weight:600;color:#111;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+        <span>${isEditing?`Editing: ${et?et.name:"Team"}`:"Add new team"}</span>
+        ${isEditing?`<button class="btn" style="font-size:12px;padding:4px 12px" onclick="tmCancelEdit()">Cancel</button>`:""}
+      </div>
+      <div class="fg">
+        <div><label>Team name</label><input id="tm-name" placeholder="e.g. Team Alpha" value="${et?et.name:""}"></div>
+        <div><label>Lead / karigar name</label><input id="tm-lead" placeholder="Person in charge" value="${et?et.lead:""}"></div>
+        <div><label>WhatsApp number</label><input id="tm-phone" placeholder="+91 XXXXX XXXXX" value="${et?et.phone:""}"></div>
+        <div><label>No. of members</label><input id="tm-members" type="number" min="1" value="${et?et.members:2}"></div>
+        <div><label>Specialization</label><select id="tm-spec">
+          ${["Electrical","Plumbing","Civil","Fabrication","Carpentry","Painting","General","Multi-skill"].map(s=>`<option${et&&et.spec===s?" selected":""}>${s}</option>`).join("")}
+        </select></div>
+        <div><label>Status</label><select id="tm-status">
+          ${[["available","Available"],["on-site","On site"],["in-transit","In transit"],["off","Off duty"]].map(([v,l])=>`<option value="${v}"${et&&et.status===v?" selected":""}>${l}</option>`).join("")}
+        </select></div>
+        <div><label>Available from</label><input id="tm-from" type="time" value="${et?et.from:"09:00"}"></div>
+        <div><label>Available until</label><input id="tm-until" type="time" value="${et?et.until:"18:00"}"></div>
+        <div class="fc"><label>Notes (optional)</label><input id="tm-notes" placeholder="Any notes" value="${et?et.notes:""}"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn ${isEditing?"btn-primary":"btn-green"}" onclick="tmSave()">${isEditing?"Save changes":"Add team"}</button>
+        ${isEditing?`<button class="btn" onclick="tmCancelEdit()">Cancel</button>`:""}
+      </div>
+      <div class="toast toast-ok" id="tm-toast"></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="font-size:14px;font-weight:600;color:#111;margin-bottom:10px">
+        All teams (${TEAMS.length})
+      </div>
+      <input class="search-inp" id="tm-search" placeholder="Search by name, lead, specialization…" oninput="tmFilterRender()">
+      <div id="tm-list">${tmListHTML(true)}</div>
+    </div>
+    <div class="modal-bg" id="tm-del-modal">
+      <div class="modal">
+        <div class="modal-title">Delete team?</div>
+        <div class="modal-sub" id="tm-del-sub"></div>
+        <div class="modal-btns">
+          <button class="modal-cancel" onclick="tmCloseModal()">Cancel</button>
+          <button class="modal-ok" onclick="tmConfirmDelete()">Delete</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function tmSave() {
+  const name    = (document.getElementById("tm-name")||{}).value||"";
+  const lead    = (document.getElementById("tm-lead")||{}).value||"";
+  const phone   = (document.getElementById("tm-phone")||{}).value||"";
+  const members = (document.getElementById("tm-members")||{}).value||"1";
+  const spec    = (document.getElementById("tm-spec")||{}).value||"General";
+  const status  = (document.getElementById("tm-status")||{}).value||"available";
+  const from    = (document.getElementById("tm-from")||{}).value||"09:00";
+  const until   = (document.getElementById("tm-until")||{}).value||"18:00";
+  const notes   = (document.getElementById("tm-notes")||{}).value||"";
+  if (!name.trim()) { alert("Please enter team name"); return; }
+  if (!lead.trim()) { alert("Please enter lead name"); return; }
+  if (!phone.trim()){ alert("Please enter WhatsApp number"); return; }
+  if (teamEditId !== null) {
+    const t = TEAMS.find(x=>x.id===teamEditId);
+    if (t) Object.assign(t,{name,lead,phone,members,spec,status,from,until,notes});
+    teamEditId = null;
+  } else {
+    TEAMS.push({id:teamNextId++,name,lead,phone,members,spec,status,from,until,notes});
+  }
+  renderTab(3);
+  setTimeout(()=>{const el=document.getElementById("tm-toast");if(el){el.textContent="Team saved!";el.style.display="block";setTimeout(()=>el.style.display="none",2500);}},50);
+}
+
+function tmStartEdit(id) {
+  teamEditId = id;
+  renderTab(3);
+  setTimeout(()=>{ const el=document.getElementById("tm-form-card"); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); },50);
+}
+
+function tmCancelEdit() {
+  teamEditId = null;
+  renderTab(3);
+}
+
+function tmAskDelete(id) {
+  teamDelId = id;
+  const t = TEAMS.find(x=>x.id===id);
+  const el = document.getElementById("tm-del-sub");
+  const modal = document.getElementById("tm-del-modal");
+  if (el) el.textContent = `Are you sure you want to delete "${t?t.name:"this team"}"? This cannot be undone.`;
+  if (modal) modal.classList.add("show");
+}
+
+function tmConfirmDelete() {
+  TEAMS = TEAMS.filter(t=>t.id!==teamDelId);
+  teamDelId = null;
+  tmCloseModal();
+  renderTab(3);
+}
+
+function tmCloseModal() {
+  const modal = document.getElementById("tm-del-modal");
+  if (modal) modal.classList.remove("show");
+  teamDelId = null;
+}
+
+function tmFilterRender() {
+  const q = ((document.getElementById("tm-search")||{}).value||"").toLowerCase();
+  const el = document.getElementById("tm-list");
+  if (!el) return;
+  const filtered = TEAMS.filter(t =>
+    !q || t.name.toLowerCase().includes(q) || t.lead.toLowerCase().includes(q) ||
+    t.spec.toLowerCase().includes(q) || t.phone.includes(q)
+  );
+  el.innerHTML = filtered.length
+    ? filtered.map((t,i)=>{
+        const c=tmColor(TEAMS.indexOf(t));
+        return `<div class="team-row-item">
+          <div class="av" style="background:${c.bg};color:${c.color};width:36px;height:36px;font-size:12px;font-weight:600;flex-shrink:0">${tmInitials(t.name)}</div>
+          <div class="tm-info">
+            <div class="tm-name">${t.name} <span style="font-weight:400;color:#888;font-size:12px">· ${t.lead}</span></div>
+            <div class="tm-sub">${t.spec} · ${t.members} member(s) · ${t.phone}</div>
+            <div class="tm-avail"><div class="tm-dot" style="background:${tmDotColor(t.status)}"></div><span>${t.from}–${t.until}${t.notes?" · "+t.notes:""}</span></div>
+          </div>
+          ${tmStatusBadge(t.status)}
+          <div class="tm-actions">
+            <button class="btn-edit-sm" onclick="tmStartEdit(${t.id})">Edit</button>
+            <button class="btn-del-sm"  onclick="tmAskDelete(${t.id})">Delete</button>
+          </div>
+        </div>`;
+      }).join("")
+    : `<div style="text-align:center;padding:1.5rem;color:#888;font-size:13px">No teams match "${q}"</div>`;
 }
 </script>
 </body>
