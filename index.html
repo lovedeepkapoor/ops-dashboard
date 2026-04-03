@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ops Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#111;font-size:14px}
+.screen{display:none}.screen.active{display:block}
+
+/* LOGIN */
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f5f5}
+.login-box{background:#fff;border-radius:16px;padding:2rem;width:100%;max-width:420px;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+.login-logo{font-size:24px;font-weight:600;color:#111;margin-bottom:4px}
+.login-sub{font-size:13px;color:#888;margin-bottom:24px}
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.role-btn{border:1.5px solid #e5e5e5;border-radius:12px;padding:16px 12px;text-align:center;cursor:pointer;background:#fff;transition:all 0.15s}
+.role-btn:hover{border-color:#378ADD;background:#f0f7ff}
+.role-btn.selected{border-color:#378ADD;background:#EAF3FB}
+.role-icon{width:40px;height:40px;border-radius:50%;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600}
+.ri-o{background:#dbeafe;color:#1d4ed8}
+.ri-s{background:#dcfce7;color:#166534}
+.ri-sv{background:#ede9fe;color:#5b21b6}
+.ri-d{background:#fef3c7;color:#92400e}
+.role-name{font-size:13px;font-weight:500;color:#111}
+.role-desc{font-size:11px;color:#888;margin-top:2px}
+.name-section{display:none;flex-direction:column;gap:8px}
+.name-section input{padding:10px 14px;border-radius:8px;border:1.5px solid #e5e5e5;font-size:14px;width:100%;outline:none}
+.name-section input:focus{border-color:#378ADD}
+.enter-btn{padding:10px;border-radius:8px;font-size:14px;cursor:pointer;border:none;width:100%;font-weight:500;color:#fff}
+.back-link{text-align:center;font-size:12px;color:#888;cursor:pointer;margin-top:4px}
+
+/* APP SHELL */
+.app-shell{min-height:100vh;background:#f5f5f5}
+.topbar{background:#fff;border-bottom:1px solid #e5e5e5;padding:12px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
+.topbar-title{font-size:15px;font-weight:600;color:#111;flex:1}
+.role-badge{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500}
+.rb-owner{background:#dbeafe;color:#1d4ed8}
+.rb-staff{background:#dcfce7;color:#166534}
+.rb-supervisor{background:#ede9fe;color:#5b21b6}
+.rb-delivery{background:#fef3c7;color:#92400e}
+.user-name{font-size:12px;color:#888}
+.lo-btn{font-size:12px;padding:4px 12px;border-radius:8px;border:1px solid #e5e5e5;background:#fff;cursor:pointer;color:#888}
+
+.tabs{display:flex;gap:4px;padding:12px 20px;background:#fff;border-bottom:1px solid #e5e5e5;overflow-x:auto}
+.tab{padding:6px 14px;border-radius:8px;border:none;font-size:13px;cursor:pointer;background:none;color:#888;white-space:nowrap}
+.tab.on{background:#EAF3FB;color:#185FA5;font-weight:500}
+
+.page-content{padding:16px 20px;max-width:900px;margin:0 auto}
+.sec{display:none}.sec.active{display:block}
+
+/* COMPONENTS */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.met{background:#fff;border-radius:12px;padding:14px;text-align:center;border:1px solid #e5e5e5}
+.met-v{font-size:24px;font-weight:600;color:#111}
+.met-l{font-size:11px;color:#888;margin-top:2px}
+.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid #e5e5e5}
+.card-title{font-size:14px;font-weight:600;color:#111;margin-bottom:12px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fc{grid-column:1/-1}
+.fg label{font-size:11px;color:#888;display:block;margin-bottom:3px;font-weight:500}
+.fg input,.fg select,.fg textarea{width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid #e5e5e5;font-size:13px;color:#111;background:#fff;outline:none}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:#378ADD}
+.fg textarea{resize:vertical;min-height:56px}
+.btn-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.btn{padding:8px 16px;border-radius:8px;border:1px solid #e5e5e5;font-size:13px;cursor:pointer;background:#fff;color:#111;font-weight:500}
+.btn:hover{background:#f5f5f5}
+.btn-primary{background:#185FA5;color:#fff;border-color:#185FA5}
+.btn-primary:hover{background:#0C447C}
+.btn-green{background:#1D9E75;color:#fff;border-color:#1D9E75}
+.btn-green:hover{background:#0F6E56}
+.btn-wa{background:#25D366;color:#fff;border-color:#25D366}
+.btn-red{background:#E24B4A;color:#fff;border-color:#E24B4A}
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:500}
+.b-green{background:#dcfce7;color:#166534}
+.b-blue{background:#dbeafe;color:#1d4ed8}
+.b-amber{background:#fef3c7;color:#92400e}
+.b-gray{background:#f3f4f6;color:#6b7280}
+.b-red{background:#fee2e2;color:#991b1b}
+.b-purple{background:#ede9fe;color:#5b21b6}
+.row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f3f4f6}
+.row:last-child{border-bottom:none}
+.row-info{flex:1;min-width:0}
+.row-name{font-size:13px;font-weight:500;color:#111}
+.row-sub{font-size:11px;color:#888;margin-top:2px}
+.av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.toast{font-size:12px;padding:8px 14px;border-radius:8px;margin-top:8px;display:none}
+.toast-ok{background:#dcfce7;color:#166534}
+.toast-err{background:#fee2e2;color:#991b1b}
+
+/* PROGRESS RING */
+.job-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.job-card{border:1px solid #e5e5e5;border-radius:12px;padding:14px;background:#fff}
+.jc-title{font-size:13px;font-weight:600;color:#111;margin-bottom:2px}
+.jc-sub{font-size:11px;color:#888;margin-bottom:10px}
+.ring-row{display:flex;align-items:center;gap:12px}
+.ring-info .pct{font-size:20px;font-weight:600;color:#111}
+.ring-info .pct-sub{font-size:11px;color:#888}
+.issue-pill{font-size:11px;padding:3px 10px;border-radius:20px;margin-top:6px;display:inline-block}
+.ip-red{background:#fee2e2;color:#991b1b}
+.ip-green{background:#dcfce7;color:#166534}
+
+/* PASTE AREA */
+.paste-box{width:100%;min-height:110px;font-family:monospace;font-size:12px;padding:10px;border-radius:8px;border:1.5px solid #e5e5e5;color:#111;background:#fff;resize:vertical;outline:none}
+.paste-box:focus{border-color:#378ADD}
+.parsed-tbl{width:100%;font-size:12px;border-collapse:collapse;margin-top:8px}
+.parsed-tbl th{text-align:left;padding:6px 8px;background:#f9fafb;color:#888;font-weight:500;border-bottom:1px solid #e5e5e5}
+.parsed-tbl td{padding:6px 8px;border-bottom:1px solid #f3f4f6;color:#111}
+.parsed-tbl td input{width:100%;border:none;font-size:12px;background:transparent;color:#111;padding:2px 4px;border-radius:4px}
+.parsed-tbl td input:focus{outline:1px solid #378ADD;background:#f0f7ff}
+.rm-btn{padding:2px 8px;font-size:11px;border-radius:4px;border:1px solid #e5e5e5;background:#fff;color:#888;cursor:pointer}
+
+/* DELIVERY STEPS */
+.d-steps{display:flex;flex-direction:column;gap:0;margin:10px 0}
+.d-step{display:flex;gap:12px;padding:10px 0;position:relative;cursor:pointer}
+.d-step:not(:last-child)::after{content:"";position:absolute;left:14px;top:40px;width:1px;height:calc(100% - 14px);background:#e5e5e5}
+.d-circle{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;border:2px solid #e5e5e5;z-index:1;background:#fff}
+.d-circle.done{background:#dcfce7;border-color:#16a34a;color:#16a34a}
+.d-circle.active-step{background:#dbeafe;border-color:#2563eb;color:#2563eb}
+.d-circle.pending-step{background:#f9fafb;color:#9ca3af}
+.d-body{flex:1;padding-top:4px}
+.d-name{font-size:13px;font-weight:500;color:#111}
+.d-desc{font-size:11px;color:#888}
+.d-action{margin-top:6px;padding:7px 16px;border-radius:8px;border:none;font-size:12px;cursor:pointer;font-weight:500;background:#1D9E75;color:#fff}
+
+/* WA CHAT */
+.wa-chat{background:#e5ddd5;border-radius:12px;padding:14px}
+.wa-msgs{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:250px;overflow-y:auto}
+.wa-out{align-self:flex-end;background:#dcf8c6;border-radius:8px 0 8px 8px;padding:8px 12px;max-width:85%;font-size:12px;line-height:1.6;color:#111}
+.wa-in{align-self:flex-start;background:#fff;border-radius:0 8px 8px 8px;padding:8px 12px;max-width:85%;font-size:12px;line-height:1.6;color:#111}
+.wa-time{font-size:10px;color:#999;text-align:right;margin-top:2px}
+.wa-inp-row{display:flex;gap:8px;align-items:flex-end}
+.wa-inp-row textarea{flex:1;font-size:12px;padding:8px;border-radius:8px;border:1px solid #ccc;resize:none;background:#fff;color:#111;min-height:36px}
+.wa-send-btn{padding:8px 14px;border-radius:8px;border:none;background:#25D366;color:#fff;font-size:12px;cursor:pointer;font-weight:500}
+.quick-replies{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.qr{padding:5px 12px;background:#fff;border-radius:20px;font-size:12px;color:#185FA5;border:1px solid #b3d4f0;cursor:pointer}
+.qr:hover{background:#EAF3FB}
+
+/* UNASSIGNED */
+.unassigned-item{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#fef3c7;border-radius:10px;margin-bottom:8px;gap:10px}
+.ui-title{font-size:13px;font-weight:500;color:#92400e}
+.ui-sub{font-size:11px;color:#b45309;margin-top:2px}
+
+/* LOG */
+.log-list{list-style:none}
+.log-list li{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:12px;align-items:flex-start}
+.log-list li:last-child{border-bottom:none}
+.log-t{font-size:10px;color:#888;min-width:42px;margin-top:1px}
+.log-dot{width:6px;height:6px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.ld-g{background:#16a34a}.ld-b{background:#2563eb}.ld-a{background:#d97706}.ld-d{background:#9ca3af}
+
+/* CONFIRM MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:16px;padding:24px;max-width:320px;width:90%}
+.modal-title{font-size:15px;font-weight:600;color:#111;margin-bottom:8px}
+.modal-sub{font-size:13px;color:#888;margin-bottom:18px;line-height:1.6}
+.modal-btns{display:flex;gap:8px}
+.modal-btns button{flex:1;padding:9px;border-radius:8px;border:1px solid #e5e5e5;font-size:13px;cursor:pointer;font-weight:500}
+.modal-ok{background:#1D9E75;color:#fff;border-color:#1D9E75}
+.modal-cancel{background:#fff;color:#111}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div class="screen active" id="screen-login">
+<div class="login-page">
+  <div class="login-box">
+    <div class="login-logo">Operations</div>
+    <div class="login-sub">Select your role to continue</div>
+    <div class="role-grid" id="role-grid">
+      <div class="role-btn" onclick="selRole('owner',this)">
+        <div class="role-icon ri-o">O</div>
+        <div class="role-name">Owner</div>
+        <div class="role-desc">Full overview</div>
+      </div>
+      <div class="role-btn" onclick="selRole('staff',this)">
+        <div class="role-icon ri-s">S</div>
+        <div class="role-name">Staff</div>
+        <div class="role-desc">Challan entry</div>
+      </div>
+      <div class="role-btn" onclick="selRole('supervisor',this)">
+        <div class="role-icon ri-sv">SV</div>
+        <div class="role-name">Supervisor</div>
+        <div class="role-desc">Karigar assign</div>
+      </div>
+      <div class="role-btn" onclick="selRole('delivery',this)">
+        <div class="role-icon ri-d">D</div>
+        <div class="role-name">Delivery</div>
+        <div class="role-desc">Status updates</div>
+      </div>
+    </div>
+    <div class="name-section" id="name-section">
+      <div style="font-size:12px;color:#888;text-align:center" id="sel-role-label"></div>
+      <input id="name-inp" placeholder="Enter your name" autocomplete="off">
+      <button class="enter-btn" id="enter-btn" onclick="doLogin()">Enter</button>
+      <div class="back-link" onclick="backRoles()">← Choose different role</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ===== APP ===== -->
+<div class="screen" id="screen-app">
+<div class="app-shell">
+  <div class="topbar">
+    <div class="topbar-title" id="app-title">Dashboard</div>
+    <span class="role-badge" id="role-badge"></span>
+    <span class="user-name" id="user-name-lbl"></span>
+    <button class="lo-btn" onclick="logout()">Exit</button>
+  </div>
+  <div class="tabs" id="tab-bar"></div>
+  <div class="page-content" id="page-content"></div>
+</div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Confirm</div>
+    <div class="modal-sub" id="modal-sub"></div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-ok" id="modal-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ───────────────────────────────────────────────────
+const API    = "";  // same origin
+let role     = "";
+let userName = "";
+let data     = { challans: [], jobs: [], deliveries: [], log: [] };
+let parsedItems = [];
+let waChats  = {};
+
+const TEAMS = [
+  { id:1, name:"Team Alpha", lead:"Ravi Kumar",    phone:"+919876500001", av:"ri-o", status:"available", avail:"08–17" },
+  { id:2, name:"Team Beta",  lead:"Suresh Singh",  phone:"+919876500002", av:"ri-s", status:"available", avail:"09–18" },
+  { id:3, name:"Team Gamma", lead:"Ajay Sharma",   phone:"+919876500003", av:"ri-sv",status:"available", avail:"07–16" },
+  { id:4, name:"Team Delta", lead:"Neha Verma",    phone:"+919876500004", av:"ri-d", status:"available", avail:"10–19" },
+  { id:5, name:"Team Echo",  lead:"Mohan Das",     phone:"+919876500005", av:"ri-o", status:"available", avail:"09–18" },
+];
+
+const DELIVERY_PERSONS = [
+  { id:1, name:"Ramesh Driver",   phone:"+919876511001" },
+  { id:2, name:"Vikram Transport", phone:"+919876511002" },
+  { id:3, name:"Sunil Logistics",  phone:"+919876511003" },
+];
+
+const STATUS_FLOW = [
+  { key:"loading",    label:"Loading goods",        desc:"Goods being loaded in vehicle" },
+  { key:"dispatched", label:"Dispatched",           desc:"Left from warehouse" },
+  { key:"reached",    label:"Reached client",       desc:"At delivery address" },
+  { key:"delivered",  label:"Delivered & confirmed",desc:"Client received goods" },
+];
+
+// ── HELPERS ─────────────────────────────────────────────────
+const tnow = () => { const d=new Date(); return d.getHours().toString().padStart(2,"0")+":"+d.getMinutes().toString().padStart(2,"0"); };
+const today = () => new Date().toISOString().split("T")[0];
+
+async function api(endpoint, body) {
+  const opts = body
+    ? { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) }
+    : { method:"GET" };
+  const r = await fetch(API + endpoint, opts);
+  return r.json();
+}
+
+async function loadData() {
+  try { const d = await api("/api/data"); data = d; } catch(e) { console.warn("Offline mode"); }
+}
+
+function showToast(id, msg, type="ok") {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.className = `toast toast-${type}`;
+  el.style.display = "block";
+  setTimeout(() => el.style.display = "none", 2800);
+}
+
+function openModal(title, sub, onOk) {
+  document.getElementById("modal-title").textContent = title;
+  document.getElementById("modal-sub").textContent   = sub;
+  document.getElementById("modal-ok").onclick        = () => { closeModal(); onOk(); };
+  document.getElementById("modal").classList.add("show");
+}
+function closeModal() { document.getElementById("modal").classList.remove("show"); }
+
+function openWA(phone, msg) {
+  const p = phone.replace(/\D/g,"");
+  window.open("https://wa.me/"+p+"?text="+encodeURIComponent(msg),"_blank");
+}
+
+// ── LOGIN ───────────────────────────────────────────────────
+let selRoleVal = "";
+function selRole(r, el) {
+  selRoleVal = r;
+  document.querySelectorAll(".role-btn").forEach(b => b.classList.remove("selected"));
+  el.classList.add("selected");
+  document.getElementById("name-section").style.display = "flex";
+  const labels = { owner:"Owner — Full control", staff:"Staff — Challan entry & delivery", supervisor:"Supervisor — Karigar assignment", delivery:"Delivery — Status updates" };
+  document.getElementById("sel-role-label").textContent = labels[r];
+  const colors = { owner:"#185FA5", staff:"#1D9E75", supervisor:"#534AB7", delivery:"#d97706" };
+  document.getElementById("enter-btn").style.background = colors[r];
+  document.getElementById("name-inp").focus();
+}
+function backRoles() {
+  document.getElementById("name-section").style.display = "none";
+  document.querySelectorAll(".role-btn").forEach(b => b.classList.remove("selected"));
+}
+
+async function doLogin() {
+  const name = document.getElementById("name-inp").value.trim();
+  if (!name) return;
+  role = selRoleVal; userName = name;
+  await loadData();
+  document.getElementById("screen-login").classList.remove("active");
+  document.getElementById("screen-app").classList.add("active");
+  const roleLabels = { owner:"Owner", staff:"Staff", supervisor:"Supervisor", delivery:"Delivery" };
+  const roleCls    = { owner:"rb-owner", staff:"rb-staff", supervisor:"rb-supervisor", delivery:"rb-delivery" };
+  document.getElementById("role-badge").textContent  = roleLabels[role];
+  document.getElementById("role-badge").className    = `role-badge ${roleCls[role]}`;
+  document.getElementById("user-name-lbl").textContent = name;
+  buildUI();
+}
+
+function logout() {
+  document.getElementById("screen-app").classList.remove("active");
+  document.getElementById("screen-login").classList.add("active");
+  document.getElementById("name-inp").value = "";
+  document.querySelectorAll(".role-btn").forEach(b => b.classList.remove("selected"));
+  document.getElementById("name-section").style.display = "none";
+  role = ""; userName = "";
+}
+
+// ── UI BUILDER ──────────────────────────────────────────────
+const ROLES = {
+  owner:      { title:"Owner dashboard",          tabs:["Dashboard","Challans","Karigar jobs","Teams","Delivery","Log"] },
+  staff:      { title:"Staff — Challan entry",    tabs:["Paste challan","My challans","Delivery update"] },
+  supervisor: { title:"Supervisor",               tabs:["Unassigned","Assign karigar","Progress","WhatsApp","Finalize"] },
+  delivery:   { title:"Delivery",                 tabs:["My deliveries","Quick update"] },
+};
+
+function buildUI() {
+  const cfg = ROLES[role];
+  document.getElementById("app-title").textContent = cfg.title;
+  const tb = document.getElementById("tab-bar");
+  tb.innerHTML = cfg.tabs.map((t,i) => `<button class="tab ${i===0?"on":""}" onclick="switchTab(${i},this)">${t}</button>`).join("");
+  renderTab(0);
+}
+
+function switchTab(idx, el) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("on"));
+  el.classList.add("on");
+  renderTab(idx);
+}
+
+function renderTab(idx) {
+  const content = document.getElementById("page-content");
+  if (role === "owner")      content.innerHTML = ownerTab(idx);
+  if (role === "staff")      content.innerHTML = staffTab(idx);
+  if (role === "supervisor") content.innerHTML = supervisorTab(idx);
+  if (role === "delivery")   content.innerHTML = deliveryTab(idx);
+  afterRender(idx);
+}
+
+// ── SHARED RENDERERS ─────────────────────────────────────────
+function badgeChallan(s) {
+  const m = { pending:"b-gray", assigned:"b-blue", dispatched:"b-amber", delivered:"b-green" };
+  return `<span class="badge ${m[s]||"b-gray"}">${s}</span>`;
+}
+function badgeJob(s) {
+  const m = { assigned:"b-blue", "in-progress":"b-amber", done:"b-green" };
+  return `<span class="badge ${m[s]||"b-gray"}">${s}</span>`;
+}
+function badgeDelivery(s) {
+  const m = { pending:"b-gray", loading:"b-amber", dispatched:"b-blue", reached:"b-purple", delivered:"b-green" };
+  return `<span class="badge ${m[s]||"b-gray"}">${s}</span>`;
+}
+function pColor(p) { return p>=75?"#16a34a":p>=40?"#d97706":"#2563eb"; }
+
+function progressRing(pct, size=52) {
+  const r=18, c=Math.PI*2*r, off=c*(1-pct/100), col=pColor(pct);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 44 44">
+    <circle cx="22" cy="22" r="${r}" fill="none" stroke="#e5e5e5" stroke-width="5"/>
+    <circle cx="22" cy="22" r="${r}" fill="none" stroke="${col}" stroke-width="5"
+      stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"
+      stroke-linecap="round" transform="rotate(-90 22 22)"/>
+    <text x="22" y="27" text-anchor="middle" font-size="11" font-weight="600" fill="${col}">${pct}%</text>
+  </svg>`;
+}
+
+function jobCards(jobs) {
+  if (!jobs.length) return `<p style="font-size:12px;color:#888">No jobs yet.</p>`;
+  return `<div class="job-grid">${jobs.map(j => {
+    const ch = data.challans.find(c => c.id === j.challan);
+    const hasIssue = j.issue && j.issue !== "none";
+    return `<div class="job-card">
+      <div class="jc-title">${j.id} — ${j.type}</div>
+      <div class="jc-sub">${j.team} · ${ch ? ch.client : j.challan}</div>
+      <div class="ring-row">
+        ${progressRing(j.pct||0)}
+        <div class="ring-info">
+          <div class="pct">${j.pct||0}%</div>
+          <div class="pct-sub">${j.status==="done"?"Complete":j.status==="assigned"?"Not started":"In progress"}</div>
+          ${j.lastNote?`<div style="font-size:11px;color:#888;margin-top:2px">${j.lastNote}</div>`:""}
+        </div>
+      </div>
+      <div class="issue-pill ${hasIssue?"ip-red":"ip-green"}">${hasIssue?"⚠ "+j.issue:"✓ No issues"}</div>
+    </div>`;
+  }).join("")}</div>`;
+}
+
+function challanRows(list) {
+  if (!list.length) return `<p style="font-size:12px;color:#888">No challans yet.</p>`;
+  return list.map(c => `<div class="row">
+    <div class="row-info">
+      <div class="row-name">${c.id} — ${c.client}</div>
+      <div class="row-sub">${c.addr} · ${(c.items||[]).length} item(s) · ${c.date} · by ${c.by}</div>
+    </div>
+    ${badgeChallan(c.status)}
+  </div>`).join("");
+}
+
+function logRows() {
+  return `<ul class="log-list">${(data.log||[]).map(l => `<li>
+    <span class="log-t">${l.t}</span>
+    <span class="log-dot ${l.type==="assign"?"ld-g":l.type==="progress"?"ld-a":l.type==="delivery"?"ld-b":"ld-d"}"></span>
+    <span>${l.txt}</span>
+  </li>`).join("")}</ul>`;
+}
+
+// ── OWNER TABS ───────────────────────────────────────────────
+function ownerTab(idx) {
+  const pending = (data.challans||[]).filter(c=>c.status==="pending");
+  if (idx===0) return `
+    <div class="metrics">
+      <div class="met"><div class="met-v">${(data.challans||[]).length}</div><div class="met-l">Challans</div></div>
+      <div class="met"><div class="met-v">${(data.jobs||[]).length}</div><div class="met-l">Karigar jobs</div></div>
+      <div class="met"><div class="met-v">${pending.length}</div><div class="met-l">Unassigned</div></div>
+      <div class="met"><div class="met-v">${(data.jobs||[]).filter(j=>j.status==="done").length}</div><div class="met-l">Completed</div></div>
+    </div>
+    ${pending.length?`<div style="background:#fef3c7;border-radius:10px;padding:10px 14px;font-size:13px;color:#92400e;margin-bottom:12px">⚠ ${pending.length} challan(s) waiting for karigar assignment</div>`:""}
+    <div class="card"><div class="card-title">Work progress</div>${jobCards(data.jobs||[])}</div>
+    <div class="card"><div class="card-title">Recent challans</div>${challanRows((data.challans||[]).slice(0,5))}</div>`;
+  if (idx===1) return `<div class="card"><div class="card-title">All challans</div>${challanRows(data.challans||[])}</div>`;
+  if (idx===2) return `<div class="card"><div class="card-title">Karigar jobs</div>${jobCards(data.jobs||[])}</div>`;
+  if (idx===3) return `<div class="card"><div class="card-title">Teams</div>${TEAMS.map(t=>`<div class="row">
+    <div class="av ${t.av}" style="background:#e5e5e5;font-size:11px">${t.name.split(" ").map(w=>w[0]).join("").slice(0,2)}</div>
+    <div class="row-info"><div class="row-name">${t.name} · ${t.lead}</div><div class="row-sub">${t.phone} · ${t.avail}</div></div>
+    <span class="badge b-green">${t.status}</span>
+  </div>`).join("")}</div>`;
+  if (idx===4) return `<div class="card"><div class="card-title">Deliveries</div>${(data.deliveries||[]).map(d=>`<div class="row">
+    <div class="row-info"><div class="row-name">${d.id} — ${d.challan}</div><div class="row-sub">${d.person} · ${d.vehicle||""}</div></div>
+    ${badgeDelivery(d.status)}
+  </div>`).join("")||`<p style="font-size:12px;color:#888">No deliveries.</p>`}</div>`;
+  if (idx===5) return `<div class="card"><div class="card-title">Activity log</div>${logRows()}</div>`;
+  return "";
+}
+
+// ── STAFF TABS ───────────────────────────────────────────────
+function staffTab(idx) {
+  if (idx===0) return `
+    <div class="card">
+      <div class="card-title">Paste challan from your software</div>
+      <div style="background:#dbeafe;border-radius:8px;padding:10px 12px;font-size:12px;color:#1d4ed8;margin-bottom:12px">
+        Copy the table from your challan software → paste below. System reads items automatically.
+      </div>
+      <div class="fg">
+        <div><label>Challan no.</label><input id="s-chno" placeholder="CH-2026-XXX" value="CH-2026-00${(data.challans||[]).length+1}"></div>
+        <div><label>Client name</label><input id="s-client" placeholder="Party / client name"></div>
+        <div class="fc"><label>Delivery address</label><input id="s-addr" placeholder="Full delivery address"></div>
+        <div><label>Contact person</label><input id="s-contact" placeholder="Name"></div>
+        <div><label>Contact phone</label><input id="s-phone" placeholder="+91 XXXXX XXXXX"></div>
+      </div>
+      <div style="margin-top:12px">
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:6px;font-weight:500">Paste challan table (Ctrl+V)</label>
+        <textarea class="paste-box" id="paste-box" placeholder="Paste table here...&#10;&#10;Example:&#10;Item Name&#9;Qty&#9;Unit&#10;Electrical Wire&#9;50&#9;mtr&#10;MCB 32A&#9;4&#9;pcs" oninput="scheduleParse()"></textarea>
+      </div>
+      <div id="parsed-section" style="display:none;margin-top:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:11px;color:#888;font-weight:500">Parsed items — edit if needed</span>
+          <button class="btn" style="font-size:11px;padding:4px 10px" onclick="addBlankRow()">+ Add row</button>
+        </div>
+        <table class="parsed-tbl">
+          <thead><tr><th style="width:55%">Description</th><th style="width:18%">Qty</th><th style="width:17%">Unit</th><th style="width:10%"></th></tr></thead>
+          <tbody id="parsed-body"></tbody>
+        </table>
+      </div>
+      <div class="fg" style="margin-top:10px">
+        <div class="fc"><label>Notes / instructions</label><textarea id="s-notes" placeholder="Any notes for karigar or delivery…"></textarea></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="submitChallan()">Submit challan</button>
+      </div>
+      <div class="toast toast-ok" id="s-toast"></div>
+    </div>`;
+  if (idx===1) return `<div class="card"><div class="card-title">Submitted challans</div>${challanRows(data.challans||[])}</div>`;
+  if (idx===2) return `
+    <div class="card">
+      <div class="card-title">Update delivery status</div>
+      <div class="fg">
+        <div><label>Delivery order</label><select id="s-dord">${(data.deliveries||[]).map(d=>`<option value="${d.id}">${d.id} — ${d.challan}</option>`).join("")}</select></div>
+        <div><label>New status</label><select id="s-dstat">
+          <option value="loading">Loading goods</option>
+          <option value="dispatched">Dispatched</option>
+          <option value="in-transit">In transit</option>
+          <option value="reached">Reached client</option>
+          <option value="delivered">Delivered & confirmed</option>
+        </select></div>
+        <div class="fc"><label>Note</label><input id="s-dnote" placeholder="Optional note"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="sUpdateDelivery()">Update status</button>
+        <button class="btn btn-wa" onclick="sNotifyClient()">Update & notify client</button>
+      </div>
+      <div class="toast toast-ok" id="s-dt"></div>
+    </div>
+    <div class="card"><div class="card-title">Active deliveries</div>${(data.deliveries||[]).map(d=>`<div class="row">
+      <div class="row-info"><div class="row-name">${d.id} — ${d.challan}</div><div class="row-sub">${d.person} · ${d.vehicle||""}</div></div>
+      ${badgeDelivery(d.status)}
+    </div>`).join("")||`<p style="font-size:12px;color:#888">No deliveries.</p>`}</div>`;
+  return "";
+}
+
+// ── SUPERVISOR TABS ──────────────────────────────────────────
+function supervisorTab(idx) {
+  const pending = (data.challans||[]).filter(c=>c.status==="pending");
+  if (idx===0) return `
+    <div class="card">
+      <div class="card-title">Challans waiting for karigar assignment</div>
+      ${pending.length ? pending.map(c=>`<div class="unassigned-item">
+        <div><div class="ui-title">${c.id} — ${c.client}</div>
+        <div class="ui-sub">${c.addr} · ${(c.items||[]).length} items · by ${c.by}</div></div>
+        <button class="btn btn-primary" style="font-size:12px;white-space:nowrap" onclick="quickAssign('${c.id}')">Assign →</button>
+      </div>`).join("") : `<p style="font-size:12px;color:#888">All challans assigned!</p>`}
+    </div>`;
+  if (idx===1) return `
+    <div class="card">
+      <div class="card-title">Assign karigar to challan</div>
+      <div class="fg">
+        <div><label>Challan</label><select id="sv-ch" onchange="svFill()">${(data.challans||[]).map(c=>`<option value="${c.id}">${c.id} — ${c.client} [${c.status}]</option>`).join("")}</select></div>
+        <div><label>Team / karigar</label><select id="sv-team">${TEAMS.map(t=>`<option value="${t.id}">${t.name} — ${t.lead}</option>`).join("")}</select></div>
+        <div><label>Work type</label><select id="sv-wtype">
+          <option>Electrical installation</option><option>Plumbing</option><option>Civil work</option>
+          <option>Fabrication</option><option>Carpentry</option><option>Painting</option>
+          <option>Inspection</option><option>Maintenance</option><option>Assembly</option>
+        </select></div>
+        <div><label>Date</label><input type="date" id="sv-date" value="${today()}"></div>
+        <div><label>Start time</label><input type="time" id="sv-stime" value="09:00"></div>
+        <div><label>Duration</label><select id="sv-dur">
+          <option>1-2 hours</option><option>2-4 hours</option><option>Half day</option>
+          <option>Full day</option><option>2 days</option><option>3+ days</option>
+        </select></div>
+        <div class="fc" style="background:#f9fafb;padding:10px;border-radius:8px">
+          <p style="font-size:11px;color:#888;margin-bottom:4px;font-weight:500">Challan details</p>
+          <div id="sv-ch-detail" style="font-size:12px;color:#111;line-height:1.8"></div>
+        </div>
+        <div class="fc"><label>Instructions for karigar</label><textarea id="sv-notes" placeholder="What to do, tools needed…"></textarea></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="svPreview()">Preview WhatsApp</button>
+        <button class="btn btn-wa" onclick="svAssign()">Assign & send WhatsApp</button>
+      </div>
+      <div id="sv-wa-preview" style="display:none;margin-top:12px"></div>
+      <div class="toast toast-ok" id="sv-toast"></div>
+    </div>`;
+  if (idx===2) return `
+    <div class="card">
+      <div class="card-title">Update job progress</div>
+      <div class="fg">
+        <div><label>Job</label><select id="sv-pjob" onchange="svLoadPct()">${(data.jobs||[]).map(j=>`<option value="${j.id}">${j.id} — ${j.challan} (${j.team})</option>`).join("")}</select></div>
+        <div><label>% work done</label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="range" id="sv-pct" min="0" max="100" step="5" value="0" oninput="document.getElementById('sv-pct-v').textContent=this.value+'%'" style="flex:1">
+            <span id="sv-pct-v" style="font-size:13px;font-weight:600;min-width:36px">0%</span>
+          </div>
+        </div>
+        <div><label>Issue</label><select id="sv-issue">
+          <option value="none">No issue</option>
+          <option value="material">Material shortage</option>
+          <option value="access">Site access problem</option>
+          <option value="design">Design change needed</option>
+          <option value="manpower">Need more manpower</option>
+          <option value="other">Other issue</option>
+        </select></div>
+        <div><label>Issue note</label><input id="sv-issue-note" placeholder="Describe issue if any"></div>
+        <div class="fc"><label>Update note</label><input id="sv-upd-note" placeholder="e.g. Ground floor done, moving to first floor"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="svSaveProgress()">Save progress</button>
+        <button class="btn btn-wa" onclick="svNotifyOwner()">Save & notify owner</button>
+      </div>
+      <div class="toast toast-ok" id="sv-prog-toast"></div>
+    </div>
+    <div class="card"><div class="card-title">All job progress</div>${jobCards(data.jobs||[])}</div>`;
+  if (idx===3) return `
+    <div class="card">
+      <div class="card-title">WhatsApp — karigar updates</div>
+      <div class="fg" style="margin-bottom:12px">
+        <div><label>Job / karigar</label><select id="wa-job">${(data.jobs||[]).map(j=>`<option value="${j.id}">${j.id} — ${j.team}</option>`).join("")}</select></div>
+        <div><label>Quick template</label><select id="wa-quick" onchange="waFill()">
+          <option value="">Custom message</option>
+          <option value="start">Work started — please update every 2 hrs</option>
+          <option value="pct">Please share current % done and any issues</option>
+          <option value="issue">Describe the issue — we will arrange support</option>
+          <option value="done">100% done? Please send finalization photos</option>
+        </select></div>
+      </div>
+      <div class="wa-chat" id="wa-chat">
+        <div style="font-size:11px;color:#667;margin-bottom:8px" id="wa-chat-hdr">Select a job above</div>
+        <div class="wa-msgs" id="wa-msgs"></div>
+        <div class="wa-inp-row">
+          <textarea id="wa-inp" rows="1" placeholder="Type message…"></textarea>
+          <button class="wa-send-btn" onclick="waSend()">Send</button>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <p style="font-size:11px;color:#888;margin-bottom:6px">Simulate karigar reply (for testing)</p>
+        <div class="quick-replies">
+          <div class="qr" onclick="karigarReply('70% done. No issues.')">70% done</div>
+          <div class="qr" onclick="karigarReply('issue: material nahi hai')">Issue: no material</div>
+          <div class="qr" onclick="karigarReply('100% done. Kaam khatam.')">100% done</div>
+          <div class="qr" onclick="karigarReply('Sab theek hai.')">All good</div>
+        </div>
+      </div>
+    </div>`;
+  if (idx===4) return `
+    <div class="card">
+      <div class="card-title">Job finalization</div>
+      <div class="fg">
+        <div><label>Completed job</label><select id="fin-job">${(data.jobs||[]).map(j=>`<option value="${j.id}">${j.id} — ${j.team} — ${j.challan}</option>`).join("")}</select></div>
+        <div><label>Completion date</label><input type="date" id="fin-date" value="${today()}"></div>
+        <div class="fc"><label>Final remarks</label><textarea id="fin-remarks" placeholder="Any pending items, client feedback…"></textarea></div>
+      </div>
+      <div style="border:2px dashed #e5e5e5;border-radius:10px;padding:20px;text-align:center;cursor:pointer;color:#888;font-size:13px;margin-top:10px" onclick="document.getElementById('fin-file').click()">
+        Tap to upload finalization photos
+        <input type="file" id="fin-file" multiple accept="image/*" style="display:none" onchange="handleFinPhotos(event)">
+      </div>
+      <div id="fin-photos" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="finalize()">Mark as complete</button>
+        <button class="btn btn-wa" onclick="finalizeAndNotify()">Complete & notify owner</button>
+      </div>
+      <div class="toast toast-ok" id="fin-toast"></div>
+    </div>`;
+  return "";
+}
+
+// ── DELIVERY TABS ────────────────────────────────────────────
+function deliveryTab(idx) {
+  const myD = data.deliveries||[];
+  if (idx===0) {
+    if (!myD.length) return `<div style="text-align:center;padding:3rem 1rem"><div style="font-size:48px;margin-bottom:12px">📦</div><p style="font-size:15px;font-weight:600;color:#111">No deliveries assigned</p><p style="font-size:13px;color:#888;margin-top:6px">Your supervisor will assign deliveries here.</p></div>`;
+    return myD.map(d => {
+      const si = STATUS_FLOW.findIndex(s=>s.key===d.status);
+      const ch = data.challans.find(c=>c.id===d.challan);
+      const steps = STATUS_FLOW.map((s,i)=>{
+        const done   = i<=si&&si>=0;
+        const next   = i===si+1||(si===-1&&i===0);
+        const cls    = done?"done":next?"active-step":"pending-step";
+        return `<div class="d-step">
+          <div class="d-circle ${cls}">${done?"✓":i+1}</div>
+          <div class="d-body">
+            <div class="d-name">${s.label}</div>
+            <div class="d-desc">${s.desc}</div>
+            ${next?`<button class="d-action" onclick="dConfirmStatus('${d.id}','${s.key}','${s.label}')">Mark as ${s.label}</button>`:""}
+          </div>
+        </div>`;
+      }).join("");
+      return `<div class="card">
+        <div style="font-size:12px;color:#888;margin-bottom:4px">${d.id} · ${d.challan} · ${d.vehicle||""}</div>
+        <div style="font-size:17px;font-weight:600;color:#111;margin-bottom:2px">${ch?ch.client:d.challan}</div>
+        <div style="font-size:13px;color:#888;margin-bottom:12px">${d.addr}</div>
+        ${ch?`<div style="background:#f9fafb;border-radius:8px;padding:10px;margin-bottom:12px">
+          <div style="font-size:11px;color:#888;margin-bottom:4px;font-weight:500">Goods</div>
+          ${ch.items.map(i=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #f3f4f6"><span>${i.desc}</span><span style="color:#888">${i.qty} ${i.unit}</span></div>`).join("")}
+        </div>`:""}
+        <div class="d-steps">${steps}</div>
+      </div>`;
+    }).join("");
+  }
+  if (idx===1) return `
+    <div class="card">
+      <div class="card-title">Quick WhatsApp update</div>
+      <p style="font-size:12px;color:#888;margin-bottom:10px">Tap to send status directly on WhatsApp</p>
+      <div class="quick-replies" style="margin-bottom:0">
+        <div class="qr" onclick="dWA('Loaded — goods loaded in vehicle')">Loaded</div>
+        <div class="qr" onclick="dWA('Dispatched — left for delivery')">Dispatched</div>
+        <div class="qr" onclick="dWA('Reached — at client location')">Reached</div>
+        <div class="qr" onclick="dWA('Delivered — confirmed by client')">Delivered</div>
+        <div class="qr" onclick="dWA('Issue: ')">Issue</div>
+      </div>
+    </div>`;
+  return "";
+}
+
+// ── AFTER RENDER ─────────────────────────────────────────────
+function afterRender(idx) {
+  if (role==="supervisor" && idx===1) svFill();
+  if (role==="supervisor" && idx===3) renderWAChat();
+}
+
+// ── PARSE CHALLAN ─────────────────────────────────────────────
+let parseTimer = null;
+function scheduleParse() { clearTimeout(parseTimer); parseTimer = setTimeout(doParse, 350); }
+function doParse() {
+  const raw = (document.getElementById("paste-box")||{}).value||"";
+  if (!raw.trim()) { parsedItems=[]; document.getElementById("parsed-section").style.display="none"; return; }
+  const lines = raw.split("\n").filter(l=>l.trim());
+  parsedItems = [];
+  lines.forEach(line => {
+    const cols = line.split(/\t|  {2,}/).map(c=>c.trim()).filter(Boolean);
+    if (!cols.length) return;
+    const desc = cols[0];
+    if (!desc || /^(item|description|particulars|s\.?no|sr)/i.test(desc)) return;
+    const qty  = cols[1]||"1";
+    const unit = cols[2]||"pcs";
+    parsedItems.push({ desc, qty, unit });
+  });
+  renderParsed();
+  document.getElementById("parsed-section").style.display = parsedItems.length?"block":"none";
+}
+function renderParsed() {
+  const el = document.getElementById("parsed-body");
+  if (!el) return;
+  el.innerHTML = parsedItems.map((it,i)=>`<tr>
+    <td><input value="${it.desc}" onchange="parsedItems[${i}].desc=this.value"></td>
+    <td><input value="${it.qty}" style="width:60px" onchange="parsedItems[${i}].qty=this.value"></td>
+    <td><input value="${it.unit}" style="width:50px" onchange="parsedItems[${i}].unit=this.value"></td>
+    <td><button class="rm-btn" onclick="parsedItems.splice(${i},1);renderParsed()">×</button></td>
+  </tr>`).join("");
+}
+function addBlankRow() { parsedItems.push({desc:"",qty:"1",unit:"pcs"}); renderParsed(); }
+
+async function submitChallan() {
+  const client = (document.getElementById("s-client")||{}).value||"";
+  if (!client.trim()) { alert("Please enter client name"); return; }
+  if (!parsedItems.length) { alert("Please paste and parse challan items first"); return; }
+  const ch = {
+    id:      document.getElementById("s-chno").value||"CH-NEW",
+    client,
+    addr:    document.getElementById("s-addr").value,
+    phone:   document.getElementById("s-phone").value,
+    contact: document.getElementById("s-contact").value,
+    items:   [...parsedItems],
+    notes:   document.getElementById("s-notes").value,
+    date:    today(),
+    by:      userName,
+  };
+  try {
+    const r = await api("/api/challan", ch);
+    if (r.ok) {
+      data.challans.unshift(r.challan);
+      parsedItems = [];
+      document.getElementById("paste-box").value = "";
+      document.getElementById("parsed-section").style.display = "none";
+      showToast("s-toast", `Challan ${ch.id} submitted!`);
+    }
+  } catch(e) {
+    // offline — add locally
+    data.challans.unshift({...ch, status:"pending", createdAt:new Date().toISOString()});
+    showToast("s-toast", `Challan ${ch.id} saved (offline)`);
+  }
+}
+
+async function sUpdateDelivery() {
+  const id     = (document.getElementById("s-dord")||{}).value;
+  const status = (document.getElementById("s-dstat")||{}).value;
+  const note   = (document.getElementById("s-dnote")||{}).value;
+  try { await api("/api/delivery/status", {id, status, note}); } catch {}
+  const d = data.deliveries.find(x=>x.id===id);
+  if (d) d.status = status;
+  showToast("s-dt","Status updated!");
+}
+async function sNotifyClient() {
+  await sUpdateDelivery();
+  const id = (document.getElementById("s-dord")||{}).value;
+  const st = (document.getElementById("s-dstat")||{}).value;
+  const d  = data.deliveries.find(x=>x.id===id);
+  const ch = data.challans.find(c=>c.id===(d&&d.challan));
+  const msgs = { loading:"Your order is being loaded.", dispatched:"Your order has been dispatched.", "in-transit":"Your goods are in transit.", reached:"Goods have reached delivery point.", delivered:"Your order has been delivered. Thank you!" };
+  const msg = `*Delivery Update*\n\nDear ${ch?ch.contact:"Customer"},\n\n${msgs[st]||"Status updated."}\n\nChallan: ${id}\n\n— Logistics Team`;
+  const phone = (ch?ch.phone:"").replace(/\D/g,"");
+  if (phone) openWA(phone, msg);
+}
+
+function svFill() {
+  const id = (document.getElementById("sv-ch")||{}).value;
+  const ch = data.challans.find(c=>c.id===id);
+  const el = document.getElementById("sv-ch-detail");
+  if (ch && el) {
+    el.innerHTML = `<strong>Client:</strong> ${ch.client}<br><strong>Address:</strong> ${ch.addr}<br><strong>Contact:</strong> ${ch.contact} — ${ch.phone}<br><strong>Items:</strong><br>${(ch.items||[]).map(i=>`&nbsp;&nbsp;• ${i.desc} — ${i.qty} ${i.unit}`).join("<br>")}${ch.notes?`<br><strong>Notes:</strong> ${ch.notes}`:""}`;
+  }
+}
+
+function quickAssign(cid) {
+  document.querySelectorAll(".tab")[1].click();
+  setTimeout(() => { const el=document.getElementById("sv-ch"); if(el){el.value=cid;svFill();} },100);
+}
+
+function svPreview() {
+  const cid  = (document.getElementById("sv-ch")||{}).value;
+  const tid  = parseInt((document.getElementById("sv-team")||{}).value);
+  const ch   = data.challans.find(c=>c.id===cid)||{items:[]};
+  const t    = TEAMS.find(x=>x.id===tid)||TEAMS[0];
+  const type = (document.getElementById("sv-wtype")||{}).value;
+  const date = (document.getElementById("sv-date")||{}).value;
+  const time = (document.getElementById("sv-stime")||{}).value;
+  const dur  = (document.getElementById("sv-dur")||{}).value;
+  const notes= (document.getElementById("sv-notes")||{}).value;
+  const items= (ch.items||[]).map(i=>`• ${i.desc} — ${i.qty} ${i.unit}`).join("\n");
+  const msg  = `*New Job — ${type}*\n\nHello ${t.lead},\n\nChallan: *${cid}*\nClient: ${ch.client||""}\nLocation: ${ch.addr||""}\nContact: ${ch.contact||""} (${ch.phone||""})\nWork: ${type}\nDate: ${date} at ${time}\nDuration: ${dur}\n\nItems:\n${items}${notes?"\n\nInstructions:\n"+notes:""}\n\nReply "% done" to update progress.\n— ${userName}`;
+  const prev = document.getElementById("sv-wa-preview");
+  if (prev) {
+    prev.style.display = "block";
+    prev.innerHTML = `<p style="font-size:11px;color:#888;margin-bottom:6px">Message to: ${t.name} — ${t.lead} (${t.phone})</p>
+    <div style="background:#e5ddd5;border-radius:12px;padding:12px">
+      <div style="background:#dcf8c6;border-radius:8px 0 8px 8px;padding:9px 12px;font-size:12px;line-height:1.6;color:#111;max-width:90%">${msg.replace(/\*(.*?)\*/g,"<strong>$1</strong>").replace(/\n/g,"<br>")}</div>
+    </div>`;
+  }
+  return { t, ch, msg };
+}
+
+async function svAssign() {
+  const { t, ch, msg } = svPreview();
+  const cid  = (document.getElementById("sv-ch")||{}).value;
+  const type = (document.getElementById("sv-wtype")||{}).value;
+  const date = (document.getElementById("sv-date")||{}).value;
+  const time = (document.getElementById("sv-stime")||{}).value;
+  const dur  = (document.getElementById("sv-dur")||{}).value;
+  const notes= (document.getElementById("sv-notes")||{}).value;
+  const job  = { challan:cid, team:t.name, lead:t.lead, phone:t.phone, type, date, time, dur, notes, by:userName };
+  try {
+    const r = await api("/api/assign", job);
+    if (r.ok) { data.jobs.unshift(r.job); const c=data.challans.find(x=>x.id===cid); if(c) c.status="assigned"; }
+  } catch(e) {
+    data.jobs.unshift({...job, id:"JB-"+(data.jobs.length+1).toString().padStart(3,"0"), pct:0, issue:"none", status:"assigned"});
+  }
+  openWA(t.phone, msg);
+  showToast("sv-toast","Assigned! WhatsApp sent.");
+}
+
+function svLoadPct() {
+  const id = (document.getElementById("sv-pjob")||{}).value;
+  const j  = data.jobs.find(x=>x.id===id);
+  if (j) {
+    const sl = document.getElementById("sv-pct");
+    if (sl) { sl.value=j.pct||0; document.getElementById("sv-pct-v").textContent=(j.pct||0)+"%"; }
+    const is = document.getElementById("sv-issue");
+    if (is) is.value = j.issue||"none";
+    const isn = document.getElementById("sv-issue-note");
+    if (isn) isn.value = j.issueNote||"";
+    const un = document.getElementById("sv-upd-note");
+    if (un) un.value = j.lastNote||"";
+  }
+}
+
+async function svSaveProgress() {
+  const id  = (document.getElementById("sv-pjob")||{}).value;
+  const pct = parseInt((document.getElementById("sv-pct")||{}).value||0);
+  const issue = (document.getElementById("sv-issue")||{}).value;
+  const issueNote = (document.getElementById("sv-issue-note")||{}).value;
+  const lastNote  = (document.getElementById("sv-upd-note")||{}).value;
+  const j = data.jobs.find(x=>x.id===id);
+  if (j) { j.pct=pct; j.issue=issue; j.issueNote=issueNote; j.lastNote=lastNote; if(pct>=100)j.status="done"; }
+  try { await api("/api/progress",{id,pct,issue,issueNote,lastNote}); } catch {}
+  showToast("sv-prog-toast","Progress saved!");
+}
+
+async function svNotifyOwner() {
+  await svSaveProgress();
+  const id  = (document.getElementById("sv-pjob")||{}).value;
+  const pct = (document.getElementById("sv-pct")||{}).value;
+  const issue = (document.getElementById("sv-issue")||{}).value;
+  const j  = data.jobs.find(x=>x.id===id);
+  const ch = data.challans.find(c=>c.id===(j&&j.challan));
+  const msg = `*Job Progress*\n\nJob: ${id}\nClient: ${ch?ch.client:""}\nTeam: ${j?j.team:""}\nProgress: *${pct}%*${issue!=="none"?"\nIssue: "+issue:""}\n\n— ${userName}`;
+  openWA("", msg); // owner phone from Twilio — fallback to general WA
+}
+
+// WA CHAT
+function renderWAChat() {
+  const id = (document.getElementById("wa-job")||{}).value;
+  const j  = data.jobs.find(x=>x.id===id);
+  const hdr = document.getElementById("wa-chat-hdr");
+  if (j && hdr) hdr.textContent = `${j.team} — ${j.lead} (${j.phone})`;
+  if (!waChats[id]) waChats[id]=[{dir:"out",msg:`Job assigned. Reply with % done or "issue: [description]".`,t:"09:00"}];
+  const msgs = document.getElementById("wa-msgs");
+  if (msgs) {
+    msgs.innerHTML = (waChats[id]||[]).map(m=>`<div><div class="${m.dir==="out"?"wa-out":"wa-in"}">${m.msg}</div><div class="wa-time">${m.t}</div></div>`).join("");
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+}
+
+function waFill() {
+  const v = (document.getElementById("wa-quick")||{}).value;
+  const id = (document.getElementById("wa-job")||{}).value;
+  const j  = data.jobs.find(x=>x.id===id);
+  const tpls = {
+    start:  `Work has started. Please update us every 2 hours with % done.`,
+    pct:    `Hi ${j?j.lead:"Team"}, please share current % of work done and any issues.`,
+    issue:  `Please describe the issue. We will arrange support immediately.`,
+    done:   `Work 100% complete? Please send finalization photos and confirm.`,
+  };
+  const inp = document.getElementById("wa-inp");
+  if (inp && tpls[v]) inp.value = tpls[v];
+}
+
+function waSend() {
+  const inp = document.getElementById("wa-inp");
+  const msg = (inp||{}).value||"";
+  if (!msg.trim()) return;
+  const id  = (document.getElementById("wa-job")||{}).value;
+  const j   = data.jobs.find(x=>x.id===id);
+  if (!waChats[id]) waChats[id]=[];
+  waChats[id].push({dir:"out",msg,t:tnow()});
+  if (inp) inp.value="";
+  if (j) openWA(j.phone, msg);
+  renderWAChat();
+}
+
+function karigarReply(msg) {
+  const id = (document.getElementById("wa-job")||{}).value;
+  if (!waChats[id]) waChats[id]=[];
+  waChats[id].push({dir:"in",msg,t:tnow()});
+  const pctM = msg.match(/(\d+)%/);
+  if (pctM) { const j=data.jobs.find(x=>x.id===id); if(j){j.pct=parseInt(pctM[1]);if(j.pct>=100)j.status="done";} }
+  renderWAChat();
+}
+
+function handleFinPhotos(e) {
+  const photos = document.getElementById("fin-photos");
+  Array.from(e.target.files).forEach(f => {
+    const url = URL.createObjectURL(f);
+    const div = document.createElement("div");
+    div.style.cssText="width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5";
+    div.innerHTML=`<img src="${url}" style="width:100%;height:100%;object-fit:cover">`;
+    photos.appendChild(div);
+  });
+}
+
+function finalize() {
+  const id      = (document.getElementById("fin-job")||{}).value;
+  const remarks = (document.getElementById("fin-remarks")||{}).value;
+  const j = data.jobs.find(x=>x.id===id);
+  if (j) { j.status="done"; j.pct=100; }
+  showToast("fin-toast","Job finalized!");
+}
+
+function finalizeAndNotify() {
+  finalize();
+  const id = (document.getElementById("fin-job")||{}).value;
+  const j  = data.jobs.find(x=>x.id===id);
+  const ch = data.challans.find(c=>c.id===(j&&j.challan));
+  const msg= `*Job Finalized ✅*\n\nJob: ${id}\nTeam: ${j?j.team:""}\nChallan: ${j?j.challan:""}\nClient: ${ch?ch.client:""}\n\nWork 100% complete.\n\n— ${userName}`;
+  openWA("", msg);
+}
+
+function dConfirmStatus(delivId, status, label) {
+  openModal(`Mark as "${label}"?`, `This will update the delivery status and notify the supervisor.`, async () => {
+    try { await api("/api/delivery/status", {id:delivId, status}); } catch {}
+    const d = data.deliveries.find(x=>x.id===delivId);
+    if (d) d.status = status;
+    const msg = `*Delivery Update*\nOrder: ${delivId}\nStatus: *${label}*\nTime: ${tnow()}\n— ${userName}`;
+    const sv  = data.deliveries.find(x=>x.id===delivId);
+    openWA(sv?sv.phone:"", msg);
+    renderTab(0);
+  });
+}
+
+function dWA(msg) {
+  const d = (data.deliveries||[])[0];
+  openWA(d?d.phone:"", msg);
+}
+</script>
+</body>
+</html>
