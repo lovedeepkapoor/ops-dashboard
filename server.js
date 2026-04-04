@@ -1,377 +1,247 @@
 // ============================================================
-// OPS APP — Main Server
-// Serves dashboard + handles Twilio WhatsApp + Google Sheets
+// Twilio WhatsApp Webhook Server
+// For: Karigar progress updates & delivery status
+// Run: node server.js
 // ============================================================
 
-const http        = require("http");
-const https       = require("https");
-const fs          = require("fs");
-const path        = require("path");
+const http = require("http");
+const https = require("https");
 const querystring = require("querystring");
 
-// ── CONFIG (filled from environment variables on Railway) ───
-const C = {
-  PORT:             process.env.PORT || 3000,
-  TWILIO_SID:       process.env.TWILIO_SID       || "",
-  TWILIO_TOKEN:     process.env.TWILIO_TOKEN      || "",
-  TWILIO_WA_FROM:   process.env.TWILIO_WA_FROM    || "whatsapp:+14155238886",
-  OWNER_PHONE:      process.env.OWNER_PHONE        || "",
-  SUPERVISOR_PHONE: process.env.SUPERVISOR_PHONE   || "",
-  SHEETS_API_KEY:   process.env.SHEETS_API_KEY     || "",
-  SHEET_ID:         process.env.SHEET_ID           || "",
+// ── CONFIG ─────────────────────────────────────────────────
+const CONFIG = {
+  PORT: 3000,
+  TWILIO_ACCOUNT_SID: "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", // your Twilio SID
+  TWILIO_AUTH_TOKEN:  "your_auth_token_here",               // your Twilio Auth Token
+  TWILIO_WA_NUMBER:   "whatsapp:+14155238886",              // your Twilio sandbox number
+  OWNER_PHONE:        "whatsapp:+919876500000",             // owner's WhatsApp number
+  SUPERVISOR_PHONE:   "whatsapp:+919876500001",             // supervisor's WhatsApp number
 };
 
-// ── GOOGLE SHEETS HELPER ────────────────────────────────────
-async function sheetsRequest(method, path, body) {
+// ── IN-MEMORY JOB STORE (replace with DB later) ────────────
+const jobs = {
+  "JB-001": { challan: "CH-2026-006", team: "Team Beta",  lead: "Suresh Singh",  phone: "+919876500002", pct: 60,  issue: "none", status: "in-progress" },
+  "JB-002": { challan: "CH-2026-007", team: "Team Alpha", lead: "Ravi Kumar",    phone: "+919876500001", pct: 30,  issue: "none", status: "in-progress" },
+};
+
+const deliveries = {
+  "DL-001": { challan: "CH-2026-006", person: "Ramesh Driver", phone: "+919876511001", clientPhone: "+919876599001", status: "in-transit" },
+};
+
+// phone → job/delivery ID mapping (who is assigned what)
+const phoneToJob = {
+  "+919876500002": "JB-001",
+  "+919876500001": "JB-002",
+};
+const phoneToDelivery = {
+  "+919876511001": "DL-001",
+};
+
+// ── HELPERS ────────────────────────────────────────────────
+function normalize(phone) {
+  return phone.replace("whatsapp:", "").replace(/\s/g, "");
+}
+
+function sendWA(to, body) {
+  const creds = Buffer.from(`${CONFIG.TWILIO_ACCOUNT_SID}:${CONFIG.TWILIO_AUTH_TOKEN}`).toString("base64");
+  const payload = querystring.stringify({ From: CONFIG.TWILIO_WA_NUMBER, To: to, Body: body });
+  const options = {
+    hostname: "api.twilio.com",
+    path: `/2010-04-01/Accounts/${CONFIG.TWILIO_ACCOUNT_SID}/Messages.json`,
+    method: "POST",
+    headers: { "Authorization": `Basic ${creds}`, "Content-Type": "application/x-www-form-urlencoded", "Content-Length": Buffer.byteLength(payload) },
+  };
   return new Promise((resolve, reject) => {
-    const data = body ? JSON.stringify(body) : null;
-    const options = {
-      hostname: "sheets.googleapis.com",
-      path,
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        ...(data ? { "Content-Length": Buffer.byteLength(data) } : {}),
-      },
-    };
     const req = https.request(options, res => {
-      let raw = "";
-      res.on("data", c => raw += c);
-      res.on("end", () => {
-        try { resolve(JSON.parse(raw)); }
-        catch { resolve({}); }
-      });
+      let data = "";
+      res.on("data", chunk => data += chunk);
+      res.on("end", () => resolve(JSON.parse(data)));
     });
     req.on("error", reject);
-    if (data) req.write(data);
+    req.write(payload);
     req.end();
   });
 }
 
-// Append a row to a sheet tab
-async function appendRow(tab, values) {
-  if (!C.SHEET_ID || !C.SHEETS_API_KEY) return;
-  const range = encodeURIComponent(`${tab}!A1`);
-  await sheetsRequest(
-    "POST",
-    `/v4/spreadsheets/${C.SHEET_ID}/values/${range}:append?valueInputOption=USER_ENTERED&key=${C.SHEETS_API_KEY}`,
-    { values: [values] }
-  );
+function timestamp() {
+  return new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 }
 
-// Read all rows from a sheet tab
-async function readRows(tab) {
-  if (!C.SHEET_ID || !C.SHEETS_API_KEY) return [];
-  const range = encodeURIComponent(`${tab}!A1:Z1000`);
-  const res = await sheetsRequest(
-    "GET",
-    `/v4/spreadsheets/${C.SHEET_ID}/values/${range}?key=${C.SHEETS_API_KEY}`
-  );
-  return res.values || [];
-}
-
-// ── TWILIO HELPER ───────────────────────────────────────────
-async function sendWA(to, body) {
-  if (!C.TWILIO_SID || !C.TWILIO_TOKEN) {
-    console.log(`[WA MOCK] To: ${to}\n${body}\n`);
-    return;
-  }
-  const creds   = Buffer.from(`${C.TWILIO_SID}:${C.TWILIO_TOKEN}`).toString("base64");
-  const payload = querystring.stringify({ From: C.TWILIO_WA_FROM, To: to, Body: body });
-  return new Promise((resolve, reject) => {
-    const options = {
-      hostname: "api.twilio.com",
-      path: `/2010-04-01/Accounts/${C.TWILIO_SID}/Messages.json`,
-      method: "POST",
-      headers: {
-        "Authorization": `Basic ${creds}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Content-Length": Buffer.byteLength(payload),
-      },
-    };
-    const req = https.request(options, res => {
-      let d = ""; res.on("data", c => d += c);
-      res.on("end", () => resolve(JSON.parse(d)));
-    });
-    req.on("error", reject);
-    req.write(payload); req.end();
-  });
-}
-
-// ── IN-MEMORY STORE (synced with Google Sheets) ─────────────
-const store = {
-  challans:    [],   // { id, client, addr, phone, contact, items, notes, status, date, by }
-  jobs:        [],   // { id, challan, team, lead, phone, type, date, time, dur, pct, issue, issueNote, lastNote, status, by }
-  deliveries:  [],   // { id, challan, person, phone, vehicle, addr, clientPhone, status, time }
-  log:         [],   // { t, txt, type }
-};
-
-// phone → job/delivery mapping (auto-built from store)
-function phoneToJob(phone) {
-  const p = phone.replace(/\D/g, "");
-  return store.jobs.find(j => j.phone.replace(/\D/g, "") === p);
-}
-function phoneToDelivery(phone) {
-  const p = phone.replace(/\D/g, "");
-  return store.deliveries.find(d => d.phone.replace(/\D/g, "") === p);
-}
-
-function tnow() {
-  const d = new Date();
-  return d.getHours().toString().padStart(2, "0") + ":" + d.getMinutes().toString().padStart(2, "0");
-}
-
-function addLog(txt, type = "info") {
-  const entry = { t: tnow(), txt, type };
-  store.log.unshift(entry);
-  if (store.log.length > 100) store.log.pop();
-  appendRow("Log", [new Date().toISOString(), txt, type]);
-}
-
-// ── KARIGAR MESSAGE PARSER ──────────────────────────────────
-function parseKarigar(msg) {
+// ── KARIGAR MESSAGE PARSER ─────────────────────────────────
+// Karigar can send messages like:
+//   "50% done"            → updates progress
+//   "75% done, no issues" → updates progress, clears issue
+//   "issue: no material"  → flags issue
+//   "100% done"           → marks complete, asks for finalization photo
+function parseKarigarMessage(msg) {
   const lower = msg.toLowerCase();
   const result = { pct: null, issue: null, issueNote: null };
+
+  // extract percentage
   const pctMatch = msg.match(/(\d+)\s*%/);
   if (pctMatch) result.pct = parseInt(pctMatch[1]);
-  if (lower.includes("issue") || lower.includes("problem") || lower.includes("nahi") || lower.includes("rukk") || lower.includes("band")) {
+
+  // extract issue
+  if (lower.includes("issue") || lower.includes("problem") || lower.includes("nahi") || lower.includes("rukk")) {
     result.issue = "flagged";
-    const m = msg.match(/(?:issue|problem)[:\s]+(.+)/i);
-    result.issueNote = m ? m[1].trim() : msg.trim();
-  } else if (lower.includes("no issue") || lower.includes("theek") || lower.includes("sab theek") || lower.includes("koi issue nahi")) {
+    const issueMatch = msg.match(/issue[:\s]+(.+)/i) || msg.match(/problem[:\s]+(.+)/i);
+    result.issueNote = issueMatch ? issueMatch[1].trim() : msg;
+  } else if (lower.includes("no issue") || lower.includes("koi issue nahi") || lower.includes("sab theek")) {
     result.issue = "none";
   }
+
   return result;
 }
 
-// ── DELIVERY MESSAGE PARSER ─────────────────────────────────
-function parseDelivery(msg) {
-  const l = msg.toLowerCase();
-  if (l.includes("load"))       return "loading";
-  if (l.includes("dispatch") || l.includes("nikl")) return "dispatched";
-  if (l.includes("reach") || l.includes("pahunch")) return "reached";
-  if (l.includes("deliver") || l.includes("de diya") || l.includes("done")) return "delivered";
+// ── DELIVERY MESSAGE PARSER ────────────────────────────────
+// Delivery person sends:
+//   "loaded"      → loading
+//   "dispatched"  → dispatched
+//   "reached"     → goods reached client
+//   "delivered"   → confirmed delivery
+function parseDeliveryMessage(msg) {
+  const lower = msg.toLowerCase();
+  if (lower.includes("loaded") || lower.includes("load"))       return "loading";
+  if (lower.includes("dispatch") || lower.includes("nikla"))    return "dispatched";
+  if (lower.includes("reached") || lower.includes("pahunch"))   return "reached";
+  if (lower.includes("delivered") || lower.includes("de diya")) return "delivered";
   return null;
 }
 
-// ── WEBHOOK HANDLER ─────────────────────────────────────────
+// ── WEBHOOK HANDLER ────────────────────────────────────────
 async function handleWebhook(body) {
-  const from    = (body.From || "").replace("whatsapp:", "");
+  const from    = normalize(body.From || "");
   const msgBody = (body.Body || "").trim();
-  const media   = body.MediaUrl0 || null;
-  console.log(`[${tnow()}] From ${from}: "${msgBody}"`);
+  const mediaUrl = body.MediaUrl0 || null; // finalization photo
 
-  // KARIGAR
-  const job = phoneToJob(from);
-  if (job) {
-    const parsed = parseKarigar(msgBody);
-    let reply = "";
-    let ownerMsg = "";
+  console.log(`[${timestamp()}] Message from ${from}: "${msgBody}"`);
 
+  // ── KARIGAR UPDATE ──────────────────────────────────────
+  const jobId = phoneToJob[from];
+  if (jobId && jobs[jobId]) {
+    const job    = jobs[jobId];
+    const parsed = parseKarigarMessage(msgBody);
+    let reply    = "";
+    let ownerNotif = "";
+
+    // update percentage
     if (parsed.pct !== null) {
       job.pct = parsed.pct;
-      if (parsed.pct >= 100) {
+      if (parsed.pct === 100) {
         job.status = "done";
-        reply    = `✅ 100% recorded for ${job.challan}. Please send finalization photos now.`;
-        ownerMsg = `🏁 *Job Complete!*\nJob: ${job.id} | Team: ${job.team}\nChallan: ${job.challan}\nWork is 100% done.`;
+        reply = `✅ Great! ${parsed.pct}% recorded. Please send finalization photos now and confirm with client.`;
+        ownerNotif = `🏁 *Job Complete!*\n\nJob: ${jobId}\nTeam: ${job.team}\nChallan: ${job.challan}\n\nWork is 100% done. Awaiting finalization photos.`;
       } else {
-        reply    = `✅ Progress updated to *${parsed.pct}%* for ${job.challan}.`;
-        ownerMsg = `📊 *Progress Update*\nJob: ${job.id} | Team: ${job.team}\nChallan: ${job.challan}\nProgress: *${parsed.pct}%*`;
+        reply = `✅ Got it! Progress updated to *${parsed.pct}%* for ${job.challan}.`;
+        ownerNotif = `📊 *Progress Update*\n\nJob: ${jobId}\nTeam: ${job.team}\nChallan: ${job.challan}\nProgress: *${parsed.pct}%*`;
       }
     }
 
+    // update issue
     if (parsed.issue === "flagged") {
       job.issue     = "flagged";
       job.issueNote = parsed.issueNote;
-      reply    += reply ? "\n\n⚠️ Issue flagged. Supervisor notified." : "⚠️ Issue flagged. Supervisor notified.";
-      ownerMsg += `\n\n⚠️ *Issue:* ${parsed.issueNote}`;
+      reply += reply ? "\n\n⚠️ Issue flagged. Supervisor has been notified." : "⚠️ Issue flagged. Supervisor notified.";
+      ownerNotif += `\n\n⚠️ *Issue:* ${parsed.issueNote}`;
     } else if (parsed.issue === "none") {
       job.issue = "none";
-      reply += reply ? "\n✅ No issues noted." : "✅ No issues recorded.";
+      reply += reply ? "\n\n✅ No issues noted." : "✅ No issues recorded.";
     }
 
-    if (media && job.pct >= 100) {
-      ownerMsg += `\n\n📸 Finalization photo received: ${media}`;
-    }
+    if (!reply) reply = `Received your update for ${job.challan}. Current progress: ${job.pct}%. Reply with "% done" or "issue: [description]".`;
 
-    if (!reply) reply = `Received for ${job.challan}. Current: ${job.pct}%. Reply with "% done" or "issue: description".`;
-
+    // send reply to karigar
     await sendWA(`whatsapp:${from}`, reply);
-    if (ownerMsg) {
-      if (C.OWNER_PHONE)      await sendWA(C.OWNER_PHONE, ownerMsg);
-      if (C.SUPERVISOR_PHONE) await sendWA(C.SUPERVISOR_PHONE, ownerMsg);
+
+    // notify owner & supervisor
+    if (ownerNotif) {
+      await sendWA(CONFIG.OWNER_PHONE, ownerNotif);
+      await sendWA(CONFIG.SUPERVISOR_PHONE, ownerNotif);
     }
 
-    // Save to Google Sheets
-    appendRow("Progress", [new Date().toISOString(), job.id, job.challan, job.team, job.pct, job.issue, job.issueNote, from]);
-    addLog(`${job.id} → ${job.pct}%${job.issue === "flagged" ? " | Issue: " + job.issueNote : ""}`, "progress");
+    // finalization photo received
+    if (mediaUrl && job.pct === 100) {
+      const photoMsg = `📸 *Finalization Photo Received*\n\nJob: ${jobId}\nTeam: ${job.team}\nChallan: ${job.challan}\nPhoto: ${mediaUrl}`;
+      await sendWA(CONFIG.OWNER_PHONE, photoMsg);
+    }
+
+    console.log(`[${timestamp()}] Job ${jobId} updated → ${job.pct}%${job.issue !== "none" ? " | Issue: " + job.issueNote : ""}`);
     return reply;
   }
 
-  // DELIVERY
-  const deliv = phoneToDelivery(from);
-  if (deliv) {
-    const status = parseDelivery(msgBody);
+  // ── DELIVERY UPDATE ─────────────────────────────────────
+  const delivId = phoneToDelivery[from];
+  if (delivId && deliveries[delivId]) {
+    const deliv  = deliveries[delivId];
+    const status = parseDeliveryMessage(msgBody);
+
     if (status) {
       deliv.status = status;
-      const labels = { loading: "Loading goods", dispatched: "Dispatched", reached: "Reached client", delivered: "Delivered & confirmed" };
-      const label  = labels[status];
-      const reply  = `✅ Status updated: *${label}*`;
+      const statusLabels = { loading: "Loading goods", dispatched: "Dispatched", reached: "Goods reached client", delivered: "Delivered & confirmed" };
+      const label = statusLabels[status];
 
+      // reply to delivery person
+      const reply = `✅ Status updated: *${label}*`;
       await sendWA(`whatsapp:${from}`, reply);
-      const notif = `🚚 *Delivery Update*\nOrder: ${deliv.id} | Challan: ${deliv.challan}\nPerson: ${deliv.person}\nStatus: *${label}*`;
-      if (C.OWNER_PHONE)      await sendWA(C.OWNER_PHONE, notif);
-      if (C.SUPERVISOR_PHONE) await sendWA(C.SUPERVISOR_PHONE, notif);
 
+      // notify supervisor & owner
+      const notif = `🚚 *Delivery Update*\n\nOrder: ${delivId}\nChallan: ${deliv.challan}\nPerson: ${deliv.person}\nStatus: *${label}*`;
+      await sendWA(CONFIG.OWNER_PHONE, notif);
+      await sendWA(CONFIG.SUPERVISOR_PHONE, notif);
+
+      // notify client when dispatched or delivered
       if (status === "dispatched" || status === "delivered") {
         const clientMsgs = {
-          dispatched: `Dear Customer,\n\nYour order (${deliv.challan}) has been dispatched and is on the way.\nDelivery by: ${deliv.person}\n\n— Logistics Team`,
-          delivered:  `Dear Customer,\n\nYour order (${deliv.challan}) has been delivered. Thank you!\n\n— Logistics Team`,
+          dispatched: `Dear Customer,\n\nYour order (${deliv.challan}) has been dispatched and is on the way.\n\nDelivery by: ${deliv.person}\n\n— Logistics Team`,
+          delivered:  `Dear Customer,\n\nYour order (${deliv.challan}) has been delivered successfully. Thank you!\n\n— Logistics Team`,
         };
-        if (deliv.clientPhone) await sendWA(`whatsapp:${deliv.clientPhone}`, clientMsgs[status]);
+        await sendWA(`whatsapp:${deliv.clientPhone}`, clientMsgs[status]);
       }
 
-      appendRow("Delivery", [new Date().toISOString(), deliv.id, deliv.challan, deliv.person, status, from]);
-      addLog(`${deliv.id} → ${label}`, "delivery");
+      console.log(`[${timestamp()}] Delivery ${delivId} → ${status}`);
       return reply;
     }
-    return `Please reply: "loaded", "dispatched", "reached", or "delivered".`;
+
+    return "Please send your delivery status: 'loaded', 'dispatched', 'reached', or 'delivered'";
   }
 
-  return "Hello! Contact your supervisor to register your number.";
+  // ── UNKNOWN SENDER ───────────────────────────────────────
+  console.log(`[${timestamp()}] Unknown sender: ${from}`);
+  return "Hello! Please contact your supervisor to register your number in the system.";
 }
 
-// ── API HANDLERS ────────────────────────────────────────────
-async function handleAPI(method, url, body, res) {
-  const send = (data, code = 200) => {
-    const json = JSON.stringify(data);
-    res.writeHead(code, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
-    res.end(json);
-  };
-
-  // GET all data
-  if (method === "GET" && url === "/api/data") {
-    return send({ challans: store.challans, jobs: store.jobs, deliveries: store.deliveries, log: store.log });
-  }
-
-  // POST new challan
-  if (method === "POST" && url === "/api/challan") {
-    const ch = { ...body, status: "pending", createdAt: new Date().toISOString() };
-    store.challans.unshift(ch);
-    appendRow("Challans", [ch.id, ch.client, ch.addr, ch.phone, ch.contact, JSON.stringify(ch.items), ch.notes, ch.status, ch.date, ch.by]);
-    addLog(`Challan ${ch.id} submitted by ${ch.by} for ${ch.client}`, "challan");
-    return send({ ok: true, challan: ch });
-  }
-
-  // POST assign karigar
-  if (method === "POST" && url === "/api/assign") {
-    const job = { ...body, id: "JB-" + String(store.jobs.length + 1).padStart(3, "0"), pct: 0, issue: "none", issueNote: "", lastNote: "", status: "assigned", createdAt: new Date().toISOString() };
-    store.jobs.unshift(job);
-    const ch = store.challans.find(c => c.id === job.challan);
-    if (ch) ch.status = "assigned";
-    appendRow("Jobs", [job.id, job.challan, job.team, job.lead, job.phone, job.type, job.date, job.time, job.dur, job.status, job.by]);
-    addLog(`${job.team} assigned to ${job.challan} (${job.type}) by ${job.by}`, "assign");
-
-    // Send WhatsApp to karigar
-    const ch2   = store.challans.find(c => c.id === job.challan);
-    const items  = ch2 ? ch2.items.map(i => `• ${i.desc} — ${i.qty} ${i.unit}`).join("\n") : "";
-    const msg    = `*New Job Assignment — ${job.type}*\n\nHello ${job.lead},\n\nChallan: *${job.challan}*\nClient: ${ch2 ? ch2.client : ""}\nLocation: ${ch2 ? ch2.addr : ""}\nContact: ${ch2 ? ch2.contact : ""} (${ch2 ? ch2.phone : ""})\nWork: ${job.type}\nDate: ${job.date} at ${job.time}\nDuration: ${job.dur}\n\nItems:\n${items}${job.notes ? "\n\nInstructions:\n" + job.notes : ""}\n\nReply with "% done" to update progress.\n— ${job.by}`;
-    await sendWA(`whatsapp:${job.phone}`, msg);
-    return send({ ok: true, job });
-  }
-
-  // POST update job progress
-  if (method === "POST" && url === "/api/progress") {
-    const { id, pct, issue, issueNote, lastNote } = body;
-    const job = store.jobs.find(j => j.id === id);
-    if (job) { job.pct = pct; job.issue = issue; job.issueNote = issueNote; job.lastNote = lastNote; if (pct >= 100) job.status = "done"; }
-    appendRow("Progress", [new Date().toISOString(), id, pct, issue, issueNote, lastNote]);
-    addLog(`${id} progress → ${pct}%${issue !== "none" ? " | " + issue : ""}`, "progress");
-    return send({ ok: true });
-  }
-
-  // POST create delivery
-  if (method === "POST" && url === "/api/delivery") {
-    const d = { ...body, id: "DL-" + String(store.deliveries.length + 1).padStart(3, "0"), status: "pending", createdAt: new Date().toISOString() };
-    store.deliveries.unshift(d);
-    const ch = store.challans.find(c => c.id === d.challan);
-    if (ch) ch.status = "dispatched";
-    appendRow("Delivery", [d.id, d.challan, d.person, d.phone, d.vehicle, d.addr, d.status]);
-    addLog(`Delivery ${d.id} created for ${d.challan}`, "delivery");
-
-    // Notify delivery person
-    const msg = `*Delivery Assignment*\n\nHello ${d.person},\n\nChallan: *${d.challan}*\nClient: ${ch ? ch.client : ""}\nAddress: ${d.addr}\nVehicle: ${d.vehicle}\n\nGoods:\n${ch ? ch.items.map(i => `• ${i.desc} — ${i.qty} ${i.unit}`).join("\n") : ""}\n\nReply: "loaded" → "dispatched" → "reached" → "delivered"\n— Logistics Team`;
-    await sendWA(`whatsapp:${d.phone}`, msg);
-    return send({ ok: true, delivery: d });
-  }
-
-  // POST update delivery status
-  if (method === "POST" && url === "/api/delivery/status") {
-    const { id, status, note } = body;
-    const d = store.deliveries.find(x => x.id === id);
-    if (d) d.status = status;
-    addLog(`${id} → ${status}${note ? " — " + note : ""}`, "delivery");
-    return send({ ok: true });
-  }
-
-  send({ error: "Not found" }, 404);
-}
-
-// ── HTTP SERVER ─────────────────────────────────────────────
+// ── HTTP SERVER ────────────────────────────────────────────
 const server = http.createServer(async (req, res) => {
-  const url    = req.url.split("?")[0];
-  const method = req.method;
-
-  // CORS preflight
-  if (method === "OPTIONS") {
-    res.writeHead(204, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET,POST", "Access-Control-Allow-Headers": "Content-Type" });
-    return res.end();
-  }
-
-  // Serve static files
-  if (method === "GET" && (url === "/" || url === "/index.html")) {
-    const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
-    res.writeHead(200, { "Content-Type": "text/html" });
-    return res.end(html);
-  }
-
-  // Twilio webhook
-  if (method === "POST" && url === "/webhook") {
-    let raw = "";
-    req.on("data", c => raw += c);
+  if (req.method === "POST" && req.url === "/webhook") {
+    let rawBody = "";
+    req.on("data", chunk => rawBody += chunk);
     req.on("end", async () => {
-      const body = querystring.parse(raw);
-      const reply = await handleWebhook(body);
-      res.writeHead(200, { "Content-Type": "text/xml" });
-      res.end(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${reply}</Message></Response>`);
+      try {
+        const body = querystring.parse(rawBody);
+        const reply = await handleWebhook(body);
+        // Twilio expects TwiML response
+        res.writeHead(200, { "Content-Type": "text/xml" });
+        res.end(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${reply}</Message></Response>`);
+      } catch (err) {
+        console.error("Webhook error:", err);
+        res.writeHead(500);
+        res.end("Error");
+      }
     });
-    return;
-  }
-
-  // API
-  if (url.startsWith("/api/")) {
-    let raw = "";
-    req.on("data", c => raw += c);
-    req.on("end", async () => {
-      let body = {};
-      try { body = JSON.parse(raw); } catch {}
-      await handleAPI(method, url, body, res);
-    });
-    return;
-  }
-
-  // Health check
-  if (url === "/health") {
+  } else if (req.method === "GET" && req.url === "/status") {
+    // health check + current job status
     res.writeHead(200, { "Content-Type": "application/json" });
-    return res.end(JSON.stringify({ status: "ok", jobs: store.jobs.length, challans: store.challans.length }));
+    res.end(JSON.stringify({ jobs, deliveries, timestamp: timestamp() }, null, 2));
+  } else {
+    res.writeHead(404);
+    res.end("Not found");
   }
-
-  res.writeHead(404); res.end("Not found");
 });
 
-server.listen(C.PORT, () => {
-  console.log(`\n✅ Ops App running on port ${C.PORT}`);
-  console.log(`   Dashboard: http://localhost:${C.PORT}`);
-  console.log(`   Webhook:   http://localhost:${C.PORT}/webhook`);
-  console.log(`   Health:    http://localhost:${C.PORT}/health\n`);
+server.listen(CONFIG.PORT, () => {
+  console.log(`\n✅ Twilio webhook server running on port ${CONFIG.PORT}`);
+  console.log(`   Webhook URL: http://YOUR_SERVER_IP:${CONFIG.PORT}/webhook`);
+  console.log(`   Status page: http://YOUR_SERVER_IP:${CONFIG.PORT}/status`);
+  console.log(`\n   Set this URL in Twilio Console → Messaging → Sandbox Settings`);
+  console.log(`   "When a message comes in" → POST → http://YOUR_IP:${CONFIG.PORT}/webhook\n`);
 });
