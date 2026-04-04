@@ -180,6 +180,47 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 .empty{text-align:center;padding:2rem 1rem;color:#aaa;font-size:13px;background:#fff;border-radius:14px;border:1px solid #e5e5e5}
 .card-base{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid #e5e5e5}
+
+/* ── VOICE ── */
+.mic-section{background:#fff;border-radius:20px;padding:22px 16px;margin-bottom:14px;border:1px solid #e5e5e5;text-align:center}
+.mic-btn{width:80px;height:80px;border-radius:50%;border:none;background:#111;color:#fff;font-size:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;transition:all 0.2s}
+.mic-btn.listening{background:#dc2626;animation:mpulse 1.2s infinite}
+.mic-btn.processing{background:#d97706}
+@keyframes mpulse{0%{box-shadow:0 0 0 0 rgba(220,38,38,0.4)}70%{box-shadow:0 0 0 18px rgba(220,38,38,0)}100%{box-shadow:0 0 0 0 rgba(220,38,38,0)}}
+.mic-status{font-size:13px;font-weight:600;color:#111;min-height:20px}
+.mic-hint{font-size:11px;color:#aaa;margin-top:5px;line-height:1.6}
+.transcript-box{background:#f9fafb;border-radius:10px;padding:10px 12px;margin-top:10px;font-size:13px;color:#555;text-align:left;min-height:40px;border:1px solid #e5e5e5;line-height:1.6;display:none}
+.transcript-box.show{display:block}
+.parsed-card{background:#fff;border-radius:16px;padding:14px;margin-bottom:14px;border:1px solid #e5e5e5;display:none}
+.parsed-card.show{display:block}
+.pc-title{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px}
+.pc-row{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #f3f4f6;align-items:flex-start}
+.pc-row:last-child{border-bottom:none}
+.pc-label{font-size:11px;color:#aaa;font-weight:600;min-width:76px;margin-top:2px;text-transform:uppercase;letter-spacing:0.3px}
+.pc-input{width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid #e5e5e5;font-size:13px;color:#111;background:#fff;outline:none;margin-top:3px}
+.pc-input:focus{border-color:#111}
+.k-select-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.k-vchip{padding:6px 12px;border-radius:20px;border:1.5px solid #e5e5e5;font-size:12px;font-weight:500;cursor:pointer;background:#fff;color:#888}
+.k-vchip.sel{background:#111;color:#fff;border-color:#111}
+.confirm-btns{display:flex;gap:8px;margin-top:12px}
+.cbtn{flex:1;padding:11px 6px;border-radius:12px;border:none;font-size:13px;font-weight:700;cursor:pointer}
+.cbtn-ok{background:#111;color:#fff}
+.cbtn-cancel{background:#f3f4f6;color:#111}
+.cbtn-retry{background:#dbeafe;color:#1d4ed8}
+.v-examples{background:#fff;border-radius:14px;padding:14px;margin-bottom:14px;border:1px solid #e5e5e5}
+.v-ex-title{font-size:13px;font-weight:700;color:#111;margin-bottom:10px}
+.v-ex-lang{font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;margin:8px 0 4px;letter-spacing:0.5px}
+.v-ex-item{padding:9px 12px;background:#f9fafb;border-radius:10px;margin-bottom:6px;font-size:12px;color:#444;line-height:1.5;cursor:pointer;border:1px solid #f3f4f6}
+.v-ex-item:active{background:#e5e5e5}
+.v-wa-box{background:#f0fdf4;border-radius:14px;padding:14px;margin-bottom:14px;border:1px solid #bbf7d0}
+.v-wa-title{font-size:13px;font-weight:700;color:#15803d;margin-bottom:6px}
+.v-wa-sub{font-size:12px;color:#166534;line-height:1.7}
+.v-site-mini{background:#fff;border-radius:12px;padding:12px;margin-bottom:8px;border:1px solid #e5e5e5}
+.vsm-name{font-size:13px;font-weight:700;color:#111}
+.vsm-sub{font-size:11px;color:#888;margin-top:2px}
+.vsm-k{font-size:11px;color:#15803d;font-weight:600;margin-top:4px}
+.toast-v{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:500;z-index:100;display:none;white-space:nowrap;max-width:90vw;text-align:center}
+.toast-v.show{display:block}
 </style>
 </head>
 <body>
@@ -297,6 +338,48 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div id="staff-list"></div>
     </div>
 
+    <!-- VOICE -->
+    <div class="pg" id="pg-voice">
+      <div class="mic-section">
+        <div style="font-size:13px;color:#888;margin-bottom:14px;font-weight:500">Tap mic · speak in Hindi, English or Hinglish</div>
+        <button class="mic-btn" id="mic-btn" onclick="toggleMic()">🎤</button>
+        <div class="mic-status" id="mic-status">Tap mic to start</div>
+        <div class="mic-hint" id="mic-hint">Say site name, address, work, karigar name, dates</div>
+        <div class="transcript-box" id="v-transcript"></div>
+      </div>
+      <div class="parsed-card" id="v-parsed-card">
+        <div class="pc-title">✓ Understood — check and confirm</div>
+        <div id="v-parsed-fields"></div>
+        <div style="margin-top:10px">
+          <div style="font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:6px">Assign karigar</div>
+          <div class="k-select-grid" id="v-k-select"></div>
+        </div>
+        <div class="confirm-btns">
+          <button class="cbtn cbtn-cancel" onclick="vReset()">Cancel</button>
+          <button class="cbtn cbtn-retry" onclick="toggleMic()">Retry 🎤</button>
+          <button class="cbtn cbtn-ok" onclick="vConfirm()">Add site & assign ↗</button>
+        </div>
+      </div>
+      <div class="v-examples">
+        <div class="v-ex-title">What to say — tap to try</div>
+        <div class="v-ex-lang">Hinglish</div>
+        <div class="v-ex-item" onclick="vSimulate('Gupta Residency ka kaam hai Sector 22 Chandigarh mein, electrical wiring karni hai teen floor ki, Ravi Kumar ko assign karo, aaj se start karo')"><strong>"Gupta Residency Sector 22 mein electrical wiring teen floor, Ravi Kumar ko assign karo"</strong></div>
+        <div class="v-ex-item" onclick="vSimulate('Patel Apartments Panchkula mein plumbing ka kaam hai, Suresh aur Ajay ko bhejo, 10 April tak khatam karna hai')"><strong>"Patel Apartments Panchkula, plumbing ka kaam, Suresh aur Ajay ko bhejo, 10 April tak"</strong></div>
+        <div class="v-ex-lang">English</div>
+        <div class="v-ex-item" onclick="vSimulate('Add new site Mehta Office Sector 34 civil work false ceiling and painting assign Mohan complete by 15 April')"><strong>"Mehta Office Sector 34, civil work, false ceiling and painting, assign Mohan, 15 April"</strong></div>
+        <div class="v-ex-lang">Hindi</div>
+        <div class="v-ex-item" onclick="vSimulate('Sharma ke ghar mein bijli ka kaam hai Model Town mein, Deepak aur Ravi ko assign karo, kal se shuru karo')"><strong>"Sharma ke ghar mein bijli ka kaam Model Town mein, Deepak aur Ravi ko assign karo"</strong></div>
+      </div>
+      <div class="v-wa-box">
+        <div class="v-wa-title">🎙 WhatsApp voice note (alternative)</div>
+        <div class="v-wa-sub">Staff can also send a WhatsApp voice note to your operations number. System transcribes it, adds the site, and assigns karigar automatically.</div>
+      </div>
+      <div id="v-sites-section" style="display:none">
+        <div style="font-size:14px;font-weight:700;color:#111;margin-bottom:10px">Added by voice</div>
+        <div id="v-sites-list"></div>
+      </div>
+    </div>
+
     <!-- LOG -->
     <div class="pg" id="pg-log">
       <div class="card-base">
@@ -311,6 +394,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <button class="nav-btn on" onclick="goPage('sites',this)"><div class="nav-icon">🏗</div>Sites</button>
     <button class="nav-btn" onclick="goPage('karigar',this)"><div class="nav-icon">👷</div>Karigar</button>
     <button class="nav-btn" onclick="goPage('pending',this)"><div class="nav-icon">⏳</div>Pending</button>
+    <button class="nav-btn" onclick="goPage('voice',this)"><div class="nav-icon">🎤</div>Voice</button>
     <button class="nav-btn" onclick="goPage('staff',this)"><div class="nav-icon">👤</div>Staff</button>
     <button class="nav-btn" onclick="goPage('log',this)"><div class="nav-icon">📋</div>Log</button>
   </div>
@@ -440,6 +524,7 @@ function render(p){
   if(p==="pending") renderPending();
   if(p==="staff")   renderStaff();
   if(p==="log")     renderLog();
+  if(p==="voice")   vRenderSites();
 }
 function renderAll(){renderSites();renderKarigars();renderPending();renderStaff();renderLog();}
 
@@ -778,6 +863,187 @@ function closeOv(id){document.getElementById(id).classList.remove("on");}
 // INIT + AUTO SYNC
 (async()=>{})();
 setInterval(async()=>{if(me){await syncData();const p=document.querySelector(".pg.on");if(p)render(p.id.replace("pg-",""));}},15000);
+
+// ── VOICE MODULE ─────────────────────────────────────────────
+const WORK_MAP={bijli:"Electrical",electric:"Electrical",wiring:"Electrical",mcb:"Electrical",paani:"Plumbing",plumbing:"Plumbing",pipe:"Plumbing",civil:"Civil",ceiling:"Civil","false ceiling":"Civil",construction:"Civil",carpentry:"Carpentry",wood:"Carpentry",furniture:"Carpentry",painting:"Painting",paint:"Painting",colour:"Painting",color:"Painting",fabrication:"Fabrication",welding:"Fabrication"};
+
+let vListening=false, vRecog=null, vParsed=null, vSelK=[], vSites=[];
+
+function toggleMic(){
+  if(vListening){vStop();return;}
+  vStart();
+}
+
+function vStart(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){vToast("Voice not supported. Use Chrome browser.");return;}
+  vRecog=new SR();
+  vRecog.lang="hi-IN";
+  vRecog.interimResults=true;
+  vRecog.maxAlternatives=3;
+  vRecog.continuous=false;
+  vRecog.onstart=()=>{
+    vListening=true;
+    document.getElementById("mic-btn").classList.add("listening");
+    document.getElementById("mic-status").textContent="Listening... speak now";
+    document.getElementById("mic-hint").textContent="Speak site name, address, work, karigar name, dates";
+    document.getElementById("v-transcript").classList.add("show");
+    document.getElementById("v-transcript").textContent="...";
+    document.getElementById("v-parsed-card").classList.remove("show");
+  };
+  vRecog.onresult=e=>{
+    const interim=Array.from(e.results).map(r=>r[0].transcript).join(" ");
+    document.getElementById("v-transcript").textContent=interim;
+    if(e.results[e.results.length-1].isFinal){
+      const final=e.results[e.results.length-1][0].transcript;
+      document.getElementById("v-transcript").textContent=final;
+      vStop();vProcess(final);
+    }
+  };
+  vRecog.onerror=e=>{vStop();vToast(e.error==="no-speech"?"No speech heard. Try again.":"Error: "+e.error);};
+  vRecog.onend=()=>{if(vListening)vStop();};
+  vRecog.start();
+}
+
+function vStop(){
+  vListening=false;
+  if(vRecog)vRecog.stop();
+  document.getElementById("mic-btn").classList.remove("listening");
+  document.getElementById("mic-status").textContent="Tap mic to start";
+  document.getElementById("mic-hint").textContent="Say site name, address, work, karigar name, dates";
+}
+
+function vProcess(text){
+  document.getElementById("mic-btn").classList.add("processing");
+  document.getElementById("mic-status").textContent="Understanding...";
+  setTimeout(()=>{
+    document.getElementById("mic-btn").classList.remove("processing");
+    vParsed=vParse(text);
+    vShowParsed(vParsed);
+    document.getElementById("mic-status").textContent="Got it! Check and confirm below";
+  },500);
+}
+
+function vParse(text){
+  const low=text.toLowerCase();
+  const r={name:"",addr:"",work:"",workType:"General",date:tdayV(),end:"",karigars:[]};
+  // site name
+  const np=[/(?:new site|add site|site)\s+([a-zA-Z\s]+?)(?:\s+(?:mein|ka|ke|ko|sector|phase|\d))/i,/([a-zA-Z]+(?:\s+[a-zA-Z]+){0,3})\s+(?:ka|ke|ki)\s+kaam/i,/([a-zA-Z]+(?:\s+[a-zA-Z]+){0,3})\s+mein\s+(?:kaam|bijli|paani|civil|paint|carpentry)/i,/([a-zA-Z]+(?:\s+[a-zA-Z]+){0,3})\s+(?:residency|apartments|apartment|office|house|ghar|villa|building|mall|hotel)/i];
+  for(const p of np){const m=text.match(p);if(m&&m[1]&&m[1].trim().length>2){r.name=m[1].trim();break;}}
+  if(!r.name){const cap=text.match(/[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*/);if(cap)r.name=cap[0];}
+  // address
+  const ap=[/sector\s+\d+[a-zA-Z]?(?:\s*,?\s*[a-zA-Z\s]+)?/i,/(?:phase|block|plot)\s+\d+(?:\s*,?\s*[a-zA-Z\s]+)?/i,/model\s+town|panchkula|chandigarh|mohali|zirakpur|ludhiana|ambala|jalandhar|delhi|mumbai/i];
+  for(const p of ap){const m=low.match(p);if(m){r.addr=m[0].trim().replace(/\b\w/g,c=>c.toUpperCase());break;}}
+  // work type
+  for(const[kw,type]of Object.entries(WORK_MAP)){if(low.includes(kw)){r.workType=type;break;}}
+  // work desc
+  const wp=[/(?:kaam hai|kaam karna hai|work is|karna hai|karni hai)\s+(.+?)(?:\s+(?:assign|ko|tak|by|\d))/i,/(?:bijli|electrical|plumbing|civil|painting|carpentry)\s+(?:ka\s+)?(?:kaam\s+)?(.{5,60})(?:\s+(?:assign|ko|tak))/i];
+  for(const p of wp){const m=text.match(p);if(m&&m[1]){r.work=m[1].trim();break;}}
+  if(!r.work)r.work=r.workType+" work";
+  // dates
+  const months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12,january:1,february:2,march:3,april:4,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
+  const dm=low.match(/(\d{1,2})\s+(april|may|june|july|august|september|october|november|december|january|february|march|apr|jan|feb|mar|jun|jul|aug|sep|oct|nov|dec)/i);
+  if(dm){const day=parseInt(dm[1]);const ms=dm[2].toLowerCase().slice(0,3);const mon=months[Object.keys(months).find(k=>k.startsWith(ms))||""]||4;r.end=`${new Date().getFullYear()}-${String(mon).padStart(2,"0")}-${String(day).padStart(2,"0")}`;}
+  if(low.includes("kal ")&&!low.includes("kal se")){const t=new Date();t.setDate(t.getDate()+1);r.date=t.toISOString().split("T")[0];}
+  // karigar matching against live D.karigars
+  const found=[];
+  D.karigars.forEach(k=>{
+    const fn=k.name.split(" ")[0].toLowerCase();
+    const ln=(k.name.split(" ")[1]||"").toLowerCase();
+    if(low.includes(fn)||low.includes(ln)||low.includes(k.name.toLowerCase()))found.push(k.id);
+  });
+  if(!found.length){
+    const skMap={electrical:["Electrical"],plumbing:["Plumbing"],civil:["Civil"],carpentry:["Carpentry"],painting:["Painting"],general:["General"]};
+    const sk=Object.keys(skMap).find(s=>r.workType.toLowerCase().includes(s));
+    if(sk){const match=D.karigars.find(k=>skMap[sk].includes(k.skill));if(match)found.push(match.id);}
+  }
+  r.karigars=found;
+  return r;
+}
+
+function vShowParsed(r){
+  const fields=[
+    {key:"vf-name",   label:"Site name",   val:r.name,      type:"text",  ph:"e.g. Gupta Residency"},
+    {key:"vf-addr",   label:"Address",     val:r.addr,      type:"text",  ph:"e.g. Sector 22, Chandigarh"},
+    {key:"vf-work",   label:"Work",        val:r.work,      type:"area",  ph:"Describe the work"},
+    {key:"vf-type",   label:"Work type",   val:r.workType,  type:"sel",   ph:""},
+    {key:"vf-date",   label:"Start date",  val:r.date,      type:"date",  ph:""},
+    {key:"vf-end",    label:"Complete by", val:r.end,       type:"date",  ph:""},
+  ];
+  const types=["Electrical","Plumbing","Civil","Carpentry","Painting","Fabrication","General"];
+  document.getElementById("v-parsed-fields").innerHTML=fields.map(f=>`<div class="pc-row">
+    <div class="pc-label">${f.label}</div>
+    <div style="flex:1">${
+      f.type==="sel"?`<select class="pc-input" id="${f.key}">${types.map(t=>`<option${f.val===t?" selected":""}>${t}</option>`).join("")}</select>`:
+      f.type==="area"?`<textarea class="pc-input" id="${f.key}" style="height:52px;resize:none">${f.val}</textarea>`:
+      f.type==="date"?`<input class="pc-input" id="${f.key}" type="date" value="${f.val}">`:
+      `<input class="pc-input" id="${f.key}" value="${f.val}" placeholder="${f.ph}">`
+    }</div></div>`).join("");
+  vSelK=[...r.karigars];
+  document.getElementById("v-k-select").innerHTML=D.karigars.map(k=>`<div class="k-vchip ${vSelK.includes(k.id)?"sel":""}" id="vc-${k.id}" onclick="vTogK(${k.id})">${k.name.split(" ")[0]} · ${k.skill}</div>`).join("")||`<div style="font-size:12px;color:#888">No karigar added yet. Add karigar first.</div>`;
+  document.getElementById("v-parsed-card").classList.add("show");
+}
+
+function vTogK(id){
+  const el=document.getElementById("vc-"+id);
+  if(vSelK.includes(id)){vSelK=vSelK.filter(x=>x!==id);el.classList.remove("sel");}
+  else{vSelK.push(id);el.classList.add("sel");}
+}
+
+async function vConfirm(){
+  const name=(document.getElementById("vf-name")||{}).value?.trim();
+  const addr=(document.getElementById("vf-addr")||{}).value?.trim();
+  const work=(document.getElementById("vf-work")||{}).value?.trim();
+  if(!name){vToast("Please enter site name");return;}
+  if(!addr){vToast("Please enter address");return;}
+  if(!work){vToast("Please enter work description");return;}
+  const body={name,addr,work,type:document.getElementById("vf-type").value,date:document.getElementById("vf-date").value||tdayV(),end:document.getElementById("vf-end").value,addedBy:(me?me.name:"Staff")+" (voice)"};
+  const r=await callAPI("/api/site/add",body);
+  const site=r&&r.ok?r.site:{id:Date.now(),...body,karigar:[],pct:0,issue:"none",note:"",status:"pending",photos:[]};
+  D.sites.push(site);
+  if(vSelK.length){
+    await callAPI("/api/assign",{siteId:site.id,karigarIds:vSelK,by:me?me.name:""});
+    vSelK.forEach(kid=>{const k=D.karigars.find(x=>x.id===kid);if(k){k.free=false;k.siteId=site.id;}});
+    site.karigar=vSelK;site.status="assigned";
+  }
+  const names=vSelK.map(id=>D.karigars.find(k=>k.id===id)?.name.split(" ")[0]).filter(Boolean);
+  vSites.unshift({...site,assignedNames:names,addedAt:new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})});
+  vRenderSites();
+  vToast("Site added!"+(names.length?" WhatsApp sent to "+names.join(", "):""));
+  vReset();
+  renderSites();renderKarigars();renderPending();
+}
+
+function vReset(){
+  vParsed=null;vSelK=[];
+  document.getElementById("v-parsed-card").classList.remove("show");
+  document.getElementById("v-transcript").classList.remove("show");
+  document.getElementById("v-transcript").textContent="";
+  document.getElementById("mic-status").textContent="Tap mic to start";
+}
+
+function vRenderSites(){
+  if(!vSites.length)return;
+  document.getElementById("v-sites-section").style.display="block";
+  document.getElementById("v-sites-list").innerHTML=vSites.map(s=>`<div class="v-site-mini">
+    <div style="display:flex;align-items:center;justify-content:space-between"><div class="vsm-name">${s.name}</div><span class="badge b-green">Added ✓</span></div>
+    <div class="vsm-sub">${s.addr} · ${s.type||""}</div>
+    <div style="font-size:12px;color:#444;margin-top:3px">📋 ${s.work}</div>
+    ${s.assignedNames&&s.assignedNames.length?`<div class="vsm-k">👷 ${s.assignedNames.join(", ")} — WA sent</div>`:""}
+    <div style="font-size:11px;color:#aaa;margin-top:3px">Added by voice · ${s.addedAt}</div>
+  </div>`).join("");
+}
+
+function vSimulate(text){
+  document.getElementById("v-transcript").classList.add("show");
+  document.getElementById("v-transcript").textContent=text;
+  document.getElementById("mic-status").textContent="Understanding...";
+  setTimeout(()=>vProcess(text),400);
+}
+
+function tdayV(){return new Date().toISOString().split("T")[0];}
+function vToast(msg){const el=document.getElementById("v-toast");if(!el)return;el.textContent=msg;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2800);}
 </script>
+<div class="toast-v" id="v-toast"></div>
 </body>
 </html>
