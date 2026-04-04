@@ -1,0 +1,101 @@
+SETUP GUIDE v3 — Plain English
+No coding. Just click and paste. ~20 minutes.
+============================================================
+
+PART 1 — PUT THE APP ONLINE
+============================================================
+
+Step 1 — GitHub account
+  → github.com → Sign up
+
+Step 2 — Upload files
+  → Click + → New repository → name it: ops-dashboard → Private
+  → Click "uploading an existing file"
+  → Drop these files: server.js, index.html, package.json
+  → Click "Commit changes"
+
+Step 3 — Railway (free hosting)
+  → railway.app → Sign up with GitHub
+  → New Project → Deploy from GitHub → select ops-dashboard
+  → Wait 1-2 min → Settings → Networking → Generate Domain
+  → Save the link e.g. ops-dashboard.up.railway.app
+
+============================================================
+PART 2 — ADD YOUR SETTINGS (Railway Variables)
+============================================================
+
+In Railway → your project → Variables tab → add each one:
+
+  OWNER_PIN       = 0000        ← your personal 4-digit PIN (change this!)
+  TWILIO_SID      = ACxxxxxxx   ← from Twilio dashboard
+  TWILIO_TOKEN    = xxxxxxx     ← from Twilio dashboard
+  TWILIO_FROM     = whatsapp:+14155238886
+  OWNER_PHONE     = whatsapp:+919876500000   ← your WhatsApp
+  NOTIFY_PHONES   = whatsapp:+919876500001,whatsapp:+919876500002
+                    ← all numbers to notify (supervisor, staff etc.)
+                      no spaces, separated by commas
+
+============================================================
+PART 3 — TWILIO WHATSAPP
+============================================================
+
+Step 4 — Twilio account
+  → twilio.com → Sign up free
+
+Step 5 — WhatsApp Sandbox
+  → Messaging → Try it out → Send a WhatsApp message
+  → Note your number e.g. +14155238886
+
+Step 6 — Set webhook URL
+  → Messaging → Sandbox Settings
+  → "When a message comes in" → paste:
+    https://ops-dashboard.up.railway.app/webhook
+  → Method: POST → Save
+
+Step 7 — Karigar joins sandbox (one time only)
+  → Each karigar sends this to +14155238886 on WhatsApp:
+    join [your-word]
+  → Twilio shows the exact word on the sandbox page
+
+============================================================
+PART 4 — FIRST TIME SETUP IN THE APP
+============================================================
+
+Step 8 — Open your app link, enter PIN: 0000 (then change it!)
+  Wait — PIN 0000 is the default OWNER_PIN from the Railway variable.
+  Change OWNER_PIN in Railway to whatever 4-digit number you want.
+
+Step 9 — Go to Staff tab → Add your staff members
+  Give each a name and a unique 4-digit PIN
+  Share their PIN with them privately
+  They use that PIN to log in
+
+Step 10 — Go to Karigar tab → Add your karigar
+  Enter name, skill, WhatsApp number
+  Number must match exactly what they use on WhatsApp
+
+============================================================
+HOW IT WORKS DAY TO DAY
+============================================================
+
+YOU / STAFF:
+  → Add site with name, address, work description, dates
+  → Go to assign → tick karigar → tap "Assign & send WhatsApp"
+  → Karigar gets WhatsApp with full site details instantly
+
+KARIGAR (only on WhatsApp — no app access):
+  → Replies "accept" → site goes active, everyone notified
+  → Replies "70%" → dashboard updates, everyone notified
+  → Replies "70 ho gaya" → system figures out 70%
+  → Replies "done" → 100% complete, everyone notified
+  → Replies "issue: no material" → everyone gets alert
+  → Sends a photo → shows in app under that site + goes to your WhatsApp
+
+COMPLETION PHOTOS:
+  → Karigar sends photo on WhatsApp when done
+  → Photo appears in the site card in your app
+  → You also get the photo on your WhatsApp directly
+
+============================================================
+NEED HELP? Tell Claude which step you're on.
+============================================================

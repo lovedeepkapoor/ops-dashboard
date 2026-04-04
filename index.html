@@ -2,1190 +2,782 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ops Dashboard</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Ops</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#111;font-size:14px}
-.screen{display:none}.screen.active{display:block}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f0f0;color:#111;font-size:14px}
 
-/* LOGIN */
-.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f5f5}
-.login-box{background:#fff;border-radius:16px;padding:2rem;width:100%;max-width:420px;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
-.login-logo{font-size:24px;font-weight:600;color:#111;margin-bottom:4px}
+/* ── LOGIN ── */
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#f0f0f0}
+.login-box{background:#fff;border-radius:20px;padding:28px 24px;width:100%;max-width:340px;border:1px solid #e5e5e5}
+.login-logo{font-size:22px;font-weight:800;color:#111;margin-bottom:4px}
 .login-sub{font-size:13px;color:#888;margin-bottom:24px}
-.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
-.role-btn{border:1.5px solid #e5e5e5;border-radius:12px;padding:16px 12px;text-align:center;cursor:pointer;background:#fff;transition:all 0.15s}
-.role-btn:hover{border-color:#378ADD;background:#f0f7ff}
-.role-btn.selected{border-color:#378ADD;background:#EAF3FB}
-.role-icon{width:40px;height:40px;border-radius:50%;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600}
-.ri-o{background:#dbeafe;color:#1d4ed8}
-.ri-s{background:#dcfce7;color:#166534}
-.ri-sv{background:#ede9fe;color:#5b21b6}
-.ri-d{background:#fef3c7;color:#92400e}
-.role-name{font-size:13px;font-weight:500;color:#111}
-.role-desc{font-size:11px;color:#888;margin-top:2px}
-.name-section{display:none;flex-direction:column;gap:8px}
-.name-section input{padding:10px 14px;border-radius:8px;border:1.5px solid #e5e5e5;font-size:14px;width:100%;outline:none}
-.name-section input:focus{border-color:#378ADD}
-.enter-btn{padding:10px;border-radius:8px;font-size:14px;cursor:pointer;border:none;width:100%;font-weight:500;color:#fff}
-.back-link{text-align:center;font-size:12px;color:#888;cursor:pointer;margin-top:4px}
+.pin-display{display:flex;gap:12px;justify-content:center;margin:20px 0}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid #d1d5db;transition:all 0.15s}
+.pin-dot.filled{background:#111;border-color:#111}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.pin-key{padding:16px;border-radius:14px;border:1px solid #e5e5e5;background:#f9fafb;font-size:18px;font-weight:600;cursor:pointer;text-align:center;color:#111;user-select:none}
+.pin-key:active{background:#e5e5e5;transform:scale(0.96)}
+.pin-key.del{background:#fff5f5;color:#dc2626;border-color:#fecaca}
+.pin-key.zero{grid-column:2}
+.pin-error{color:#dc2626;font-size:13px;text-align:center;margin-top:8px;min-height:18px}
 
-/* APP SHELL */
-.app-shell{min-height:100vh;background:#f5f5f5}
-.topbar{background:#fff;border-bottom:1px solid #e5e5e5;padding:12px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
-.topbar-title{font-size:15px;font-weight:600;color:#111;flex:1}
-.role-badge{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500}
-.rb-owner{background:#dbeafe;color:#1d4ed8}
-.rb-staff{background:#dcfce7;color:#166534}
-.rb-supervisor{background:#ede9fe;color:#5b21b6}
-.rb-delivery{background:#fef3c7;color:#92400e}
-.user-name{font-size:12px;color:#888}
-.lo-btn{font-size:12px;padding:4px 12px;border-radius:8px;border:1px solid #e5e5e5;background:#fff;cursor:pointer;color:#888}
+/* ── APP ── */
+.app{display:none;flex-direction:column;min-height:100vh}
+.app.on{display:flex}
+.topbar{background:#fff;border-bottom:1px solid #e5e5e5;padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:30}
+.topbar-title{font-size:15px;font-weight:700;color:#111;flex:1}
+.user-chip{font-size:12px;background:#f3f4f6;padding:4px 10px;border-radius:20px;color:#555;font-weight:500}
+.logout-btn{font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #e5e5e5;background:#fff;cursor:pointer;color:#888}
 
-.tabs{display:flex;gap:4px;padding:12px 20px;background:#fff;border-bottom:1px solid #e5e5e5;overflow-x:auto}
-.tab{padding:6px 14px;border-radius:8px;border:none;font-size:13px;cursor:pointer;background:none;color:#888;white-space:nowrap}
-.tab.on{background:#EAF3FB;color:#185FA5;font-weight:500}
+.nav{display:flex;background:#fff;border-top:1px solid #e5e5e5;position:fixed;bottom:0;left:0;right:0;z-index:30;max-width:500px;margin:0 auto}
+.nav-btn{flex:1;padding:10px 4px 8px;border:none;background:none;font-size:10px;font-weight:600;color:#aaa;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
+.nav-btn.on{color:#111}
+.nav-icon{font-size:20px;line-height:1}
 
-.page-content{padding:16px 20px;max-width:900px;margin:0 auto}
-.sec{display:none}.sec.active{display:block}
+.content{flex:1;max-width:500px;width:100%;margin:0 auto;padding:12px 10px 80px;overflow-y:auto}
+.pg{display:none}.pg.on{display:block}
 
-/* COMPONENTS */
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:10px;margin-bottom:16px}
-.met{background:#fff;border-radius:12px;padding:14px;text-align:center;border:1px solid #e5e5e5}
-.met-v{font-size:24px;font-weight:600;color:#111}
-.met-l{font-size:11px;color:#888;margin-top:2px}
-.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid #e5e5e5}
-.card-title{font-size:14px;font-weight:600;color:#111;margin-bottom:12px}
-.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.fc{grid-column:1/-1}
-.fg label{font-size:11px;color:#888;display:block;margin-bottom:3px;font-weight:500}
-.fg input,.fg select,.fg textarea{width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid #e5e5e5;font-size:13px;color:#111;background:#fff;outline:none}
-.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:#378ADD}
-.fg textarea{resize:vertical;min-height:56px}
-.btn-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
-.btn{padding:8px 16px;border-radius:8px;border:1px solid #e5e5e5;font-size:13px;cursor:pointer;background:#fff;color:#111;font-weight:500}
-.btn:hover{background:#f5f5f5}
-.btn-primary{background:#185FA5;color:#fff;border-color:#185FA5}
-.btn-primary:hover{background:#0C447C}
-.btn-green{background:#1D9E75;color:#fff;border-color:#1D9E75}
-.btn-green:hover{background:#0F6E56}
-.btn-wa{background:#25D366;color:#fff;border-color:#25D366}
-.btn-red{background:#E24B4A;color:#fff;border-color:#E24B4A}
-.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:500}
-.b-green{background:#dcfce7;color:#166534}
-.b-blue{background:#dbeafe;color:#1d4ed8}
+/* ── PILLS ── */
+.pills{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:2px}
+.pill{background:#fff;border-radius:12px;padding:10px 14px;border:1px solid #e5e5e5;white-space:nowrap;flex-shrink:0;min-width:76px}
+.pill-v{font-size:20px;font-weight:700;color:#111}
+.pill-l{font-size:11px;color:#888;margin-top:1px}
+.pill-red .pill-v{color:#dc2626}
+.pill-green .pill-v{color:#16a34a}
+.pill-amber .pill-v{color:#d97706}
+
+/* ── TOGGLE / FORM ── */
+.add-toggle{width:100%;padding:12px;border-radius:12px;border:1.5px dashed #d1d5db;background:#fff;font-size:13px;font-weight:600;color:#888;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:6px}
+.add-toggle.open{background:#111;color:#fff;border-style:solid;border-color:#111}
+.form-box{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;border:1.5px dashed #d1d5db}
+.form-title{font-size:14px;font-weight:700;color:#111;margin-bottom:12px}
+.f{margin-bottom:10px}
+.f label{font-size:11px;color:#888;font-weight:600;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.3px}
+.f input,.f select,.f textarea{width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid #e5e5e5;font-size:13px;color:#111;background:#fff;outline:none;-webkit-appearance:none}
+.f input:focus,.f select:focus,.f textarea:focus{border-color:#111}
+.f textarea{resize:none;height:64px;line-height:1.5}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.save-btn{width:100%;padding:12px;border-radius:12px;border:none;background:#111;color:#fff;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px}
+.save-btn:active{opacity:0.8}
+
+/* ── CARDS ── */
+.site-card{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;border:1px solid #e5e5e5}
+.sc-name{font-size:15px;font-weight:700;color:#111;line-height:1.3}
+.sc-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.sc-meta{font-size:12px;color:#888;margin-top:2px}
+.sc-work{font-size:12px;color:#444;margin-top:4px;line-height:1.5;font-weight:500}
+.sc-dates{font-size:11px;color:#888;margin-top:4px;display:flex;gap:8px;flex-wrap:wrap}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0}
+.b-green{background:#dcfce7;color:#15803d}
 .b-amber{background:#fef3c7;color:#92400e}
+.b-blue{background:#dbeafe;color:#1d4ed8}
+.b-red{background:#fee2e2;color:#dc2626}
 .b-gray{background:#f3f4f6;color:#6b7280}
-.b-red{background:#fee2e2;color:#991b1b}
 .b-purple{background:#ede9fe;color:#5b21b6}
-.row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f3f4f6}
-.row:last-child{border-bottom:none}
-.row-info{flex:1;min-width:0}
-.row-name{font-size:13px;font-weight:500;color:#111}
-.row-sub{font-size:11px;color:#888;margin-top:2px}
-.av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
-.toast{font-size:12px;padding:8px 14px;border-radius:8px;margin-top:8px;display:none}
-.toast-ok{background:#dcfce7;color:#166534}
-.toast-err{background:#fee2e2;color:#991b1b}
+.b-teal{background:#ccfbf1;color:#0f766e}
 
-/* PROGRESS RING */
-.job-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
-.job-card{border:1px solid #e5e5e5;border-radius:12px;padding:14px;background:#fff}
-.jc-title{font-size:13px;font-weight:600;color:#111;margin-bottom:2px}
-.jc-sub{font-size:11px;color:#888;margin-bottom:10px}
-.ring-row{display:flex;align-items:center;gap:12px}
-.ring-info .pct{font-size:20px;font-weight:600;color:#111}
-.ring-info .pct-sub{font-size:11px;color:#888}
-.issue-pill{font-size:11px;padding:3px 10px;border-radius:20px;margin-top:6px;display:inline-block}
-.ip-red{background:#fee2e2;color:#991b1b}
-.ip-green{background:#dcfce7;color:#166534}
+.prog-wrap{display:flex;align-items:center;gap:10px;margin:10px 0 8px}
+.prog-bg{flex:1;height:8px;background:#f3f4f6;border-radius:4px;overflow:hidden}
+.prog-fill{height:100%;border-radius:4px;transition:width .4s}
+.prog-pct{font-size:13px;font-weight:700;min-width:34px;text-align:right}
 
-/* PASTE AREA */
-.paste-box{width:100%;min-height:110px;font-family:monospace;font-size:12px;padding:10px;border-radius:8px;border:1.5px solid #e5e5e5;color:#111;background:#fff;resize:vertical;outline:none}
-.paste-box:focus{border-color:#378ADD}
-.parsed-tbl{width:100%;font-size:12px;border-collapse:collapse;margin-top:8px}
-.parsed-tbl th{text-align:left;padding:6px 8px;background:#f9fafb;color:#888;font-weight:500;border-bottom:1px solid #e5e5e5}
-.parsed-tbl td{padding:6px 8px;border-bottom:1px solid #f3f4f6;color:#111}
-.parsed-tbl td input{width:100%;border:none;font-size:12px;background:transparent;color:#111;padding:2px 4px;border-radius:4px}
-.parsed-tbl td input:focus{outline:1px solid #378ADD;background:#f0f7ff}
-.rm-btn{padding:2px 8px;font-size:11px;border-radius:4px;border:1px solid #e5e5e5;background:#fff;color:#888;cursor:pointer}
+.k-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.k-tag{display:flex;align-items:center;gap:4px;background:#f9fafb;border:1px solid #e5e5e5;border-radius:8px;padding:4px 7px;font-size:12px;font-weight:500;cursor:pointer}
+.k-tag:active{background:#fee2e2}
+.k-av{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+.no-k{background:#fff5f5;border:1px solid #fecaca;border-radius:8px;padding:6px 10px;font-size:12px;color:#dc2626;font-weight:500}
+.issue-box{background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:7px 10px;font-size:12px;color:#92400e;font-weight:500;margin-top:6px}
+.note-box{font-size:12px;color:#555;margin-top:6px;border-top:1px solid #f3f4f6;padding-top:6px}
+.wa-waiting{display:flex;align-items:center;gap:5px;font-size:11px;color:#15803d;margin-top:5px}
+.wa-dot{width:6px;height:6px;border-radius:50%;background:#25D366;flex-shrink:0}
 
-/* DELIVERY STEPS */
-.d-steps{display:flex;flex-direction:column;gap:0;margin:10px 0}
-.d-step{display:flex;gap:12px;padding:10px 0;position:relative;cursor:pointer}
-.d-step:not(:last-child)::after{content:"";position:absolute;left:14px;top:40px;width:1px;height:calc(100% - 14px);background:#e5e5e5}
-.d-circle{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;border:2px solid #e5e5e5;z-index:1;background:#fff}
-.d-circle.done{background:#dcfce7;border-color:#16a34a;color:#16a34a}
-.d-circle.active-step{background:#dbeafe;border-color:#2563eb;color:#2563eb}
-.d-circle.pending-step{background:#f9fafb;color:#9ca3af}
-.d-body{flex:1;padding-top:4px}
-.d-name{font-size:13px;font-weight:500;color:#111}
-.d-desc{font-size:11px;color:#888}
-.d-action{margin-top:6px;padding:7px 16px;border-radius:8px;border:none;font-size:12px;cursor:pointer;font-weight:500;background:#1D9E75;color:#fff}
+/* PHOTOS */
+.photos-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.photo-thumb{width:64px;height:64px;border-radius:8px;object-fit:cover;border:1px solid #e5e5e5;cursor:pointer}
+.photo-label{font-size:11px;color:#888;margin-top:4px;font-weight:500}
 
-/* WA CHAT */
-.wa-chat{background:#e5ddd5;border-radius:12px;padding:14px}
-.wa-msgs{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:250px;overflow-y:auto}
-.wa-out{align-self:flex-end;background:#dcf8c6;border-radius:8px 0 8px 8px;padding:8px 12px;max-width:85%;font-size:12px;line-height:1.6;color:#111}
-.wa-in{align-self:flex-start;background:#fff;border-radius:0 8px 8px 8px;padding:8px 12px;max-width:85%;font-size:12px;line-height:1.6;color:#111}
-.wa-time{font-size:10px;color:#999;text-align:right;margin-top:2px}
-.wa-inp-row{display:flex;gap:8px;align-items:flex-end}
-.wa-inp-row textarea{flex:1;font-size:12px;padding:8px;border-radius:8px;border:1px solid #ccc;resize:none;background:#fff;color:#111;min-height:36px}
-.wa-send-btn{padding:8px 14px;border-radius:8px;border:none;background:#25D366;color:#fff;font-size:12px;cursor:pointer;font-weight:500}
-.quick-replies{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.qr{padding:5px 12px;background:#fff;border-radius:20px;font-size:12px;color:#185FA5;border:1px solid #b3d4f0;cursor:pointer}
-.qr:hover{background:#EAF3FB}
+.sc-btns{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.sc-btn{flex:1;min-width:0;padding:9px 4px;border-radius:10px;border:none;font-size:12px;font-weight:600;cursor:pointer;text-align:center}
+.btn-assign{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.btn-status{background:#111;color:#fff}
+.btn-wa{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+.btn-del{background:#fff5f5;color:#dc2626;border:1px solid #fecaca}
 
-/* UNASSIGNED */
-.unassigned-item{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#fef3c7;border-radius:10px;margin-bottom:8px;gap:10px}
-.ui-title{font-size:13px;font-weight:500;color:#92400e}
-.ui-sub{font-size:11px;color:#b45309;margin-top:2px}
+/* KARIGAR CARD */
+.k-card{background:#fff;border-radius:14px;padding:12px 14px;margin-bottom:8px;border:1px solid #e5e5e5;display:flex;align-items:center;gap:12px}
+.k-av-big{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+.k-info{flex:1;min-width:0}
+.k-name{font-size:14px;font-weight:700;color:#111}
+.k-sub{font-size:12px;color:#888;margin-top:2px}
+.k-st{font-size:11px;margin-top:3px;font-weight:600}
+.k-free-st{color:#15803d}.k-busy-st{color:#1d4ed8}
+.k-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.k-btn{padding:6px 12px;border-radius:8px;border:none;font-size:12px;font-weight:600;cursor:pointer}
+.k-btn-a{background:#111;color:#fff}
+.k-btn-r{background:#f3f4f6;color:#6b7280}
+.k-btn-d{background:#fff5f5;color:#dc2626;border:1px solid #fecaca;padding:4px 10px;font-size:11px}
+.free-banner{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:13px;color:#15803d;font-weight:600;display:flex;align-items:center;gap:6px}
 
-/* TEAM MGMT */
-.team-row-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #f3f4f6}
-.team-row-item:last-child{border-bottom:none}
-.tm-info{flex:1;min-width:0}
-.tm-name{font-size:13px;font-weight:600;color:#111}
-.tm-sub{font-size:11px;color:#888;margin-top:2px}
-.tm-avail{font-size:11px;color:#888;margin-top:2px;display:flex;align-items:center;gap:5px}
-.tm-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.tm-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
-.btn-edit-sm{padding:4px 12px;border-radius:6px;border:1px solid #b3d4f0;background:#EAF3FB;color:#185FA5;font-size:12px;cursor:pointer;font-weight:500}
-.btn-del-sm{padding:4px 12px;border-radius:6px;border:1px solid #fca5a5;background:#fee2e2;color:#991b1b;font-size:12px;cursor:pointer;font-weight:500}
-.btn-edit-sm:hover{background:#dbeafe}
-.btn-del-sm:hover{background:#fecaca}
-.team-form-wrap{background:#f9fafb;border-radius:10px;padding:14px;margin-bottom:14px;border:1.5px solid #e5e5e5}
-.team-form-wrap.editing{border-color:#378ADD;background:#f0f7ff}
-.search-inp{width:100%;padding:8px 12px;border-radius:8px;border:1.5px solid #e5e5e5;font-size:13px;color:#111;outline:none;margin-bottom:12px}
-.search-inp:focus{border-color:#378ADD}
-.tm-stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
-.tm-stat{background:#fff;border-radius:10px;padding:10px;text-align:center;border:1px solid #e5e5e5}
-.tm-stat-v{font-size:18px;font-weight:600;color:#111}
-.tm-stat-l{font-size:11px;color:#888;margin-top:2px}
+/* STAFF CARD */
+.staff-card{background:#fff;border-radius:14px;padding:12px 14px;margin-bottom:8px;border:1px solid #e5e5e5;display:flex;align-items:center;gap:12px}
+.staff-av{width:42px;height:42px;border-radius:50%;background:#dbeafe;color:#1d4ed8;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+.staff-av.owner{background:#ede9fe;color:#5b21b6}
+.staff-info{flex:1;min-width:0}
+.staff-name{font-size:14px;font-weight:700;color:#111}
+.staff-sub{font-size:12px;color:#888;margin-top:2px}
+.staff-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
 
-/* LOG */
-.log-list{list-style:none}
-.log-list li{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:12px;align-items:flex-start}
-.log-list li:last-child{border-bottom:none}
-.log-t{font-size:10px;color:#888;min-width:42px;margin-top:1px}
+/* PENDING */
+.pend-hdr{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px;display:flex;align-items:center;justify-content:space-between}
+.pend-count{background:#111;color:#fff;font-size:11px;padding:2px 8px;border-radius:20px}
+.pend-card{background:#fff;border-radius:12px;padding:12px;margin-bottom:8px;border:1px solid #e5e5e5}
+.pend-name{font-size:13px;font-weight:700;color:#111}
+.pend-sub{font-size:11px;color:#888;margin-top:2px}
+.pend-work{font-size:12px;color:#444;margin-top:4px}
+.pend-btn{width:100%;padding:10px;border-radius:10px;border:none;background:#111;color:#fff;font-size:13px;font-weight:600;cursor:pointer;margin-top:10px}
+
+/* CHIP ROW */
+.chip-row{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:2px}
+.chip{padding:6px 14px;border-radius:20px;border:1px solid #e5e5e5;font-size:12px;font-weight:500;cursor:pointer;background:#fff;color:#888;white-space:nowrap;flex-shrink:0}
+.chip.on{background:#111;color:#fff;border-color:#111}
+
+/* BOTTOM SHEET */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:50;align-items:flex-end;justify-content:center}
+.overlay.on{display:flex}
+.sheet{background:#fff;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto}
+.sh-title{font-size:16px;font-weight:700;color:#111;margin-bottom:2px}
+.sh-sub{font-size:12px;color:#888;margin-bottom:14px;line-height:1.5}
+.sh-k-row{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;cursor:pointer;margin-bottom:4px;border:1.5px solid transparent}
+.sh-k-row:active{background:#f9fafb}
+.sh-k-row.sel{background:#eff6ff;border-color:#bfdbfe}
+.sh-check{width:22px;height:22px;border-radius:50%;border:2px solid #d1d5db;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.sh-check.on{background:#111;border-color:#111;color:#fff}
+.sh-btns{display:flex;gap:8px;margin-top:14px}
+.sh-btn{flex:1;padding:12px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer}
+.sh-ok{background:#111;color:#fff}
+.sh-cancel{background:#f3f4f6;color:#111}
+
+/* STATUS SHEET */
+.pct-big{font-size:56px;font-weight:700;text-align:center;margin:4px 0}
+.pct-slider{width:100%;accent-color:#111;margin:8px 0 18px;cursor:pointer}
+.issue-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.issue-opt{padding:10px 8px;border-radius:10px;border:1.5px solid #e5e5e5;font-size:12px;font-weight:600;text-align:center;cursor:pointer}
+.issue-opt.on{background:#111;color:#fff;border-color:#111}
+
+/* PHOTO LIGHTBOX */
+.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:100;align-items:center;justify-content:center}
+.lightbox.on{display:flex}
+.lightbox img{max-width:90%;max-height:90vh;border-radius:8px}
+.lightbox-close{position:absolute;top:16px;right:16px;color:#fff;font-size:28px;cursor:pointer;font-weight:300}
+
+.log-item{display:flex;gap:8px;padding:9px 0;border-bottom:1px solid #f3f4f6;font-size:12px;align-items:flex-start}
+.log-item:last-child{border-bottom:none}
+.log-t{font-size:10px;color:#aaa;min-width:40px;margin-top:1px}
 .log-dot{width:6px;height:6px;border-radius:50%;margin-top:4px;flex-shrink:0}
-.ld-g{background:#16a34a}.ld-b{background:#2563eb}.ld-a{background:#d97706}.ld-d{background:#9ca3af}
+.ld-g{background:#15803d}.ld-a{background:#d97706}.ld-r{background:#dc2626}.ld-b{background:#1d4ed8}.ld-d{background:#9ca3af}.ld-p{background:#7c3aed}
 
-/* CONFIRM MODAL */
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center}
-.modal-bg.show{display:flex}
-.modal{background:#fff;border-radius:16px;padding:24px;max-width:320px;width:90%}
-.modal-title{font-size:15px;font-weight:600;color:#111;margin-bottom:8px}
-.modal-sub{font-size:13px;color:#888;margin-bottom:18px;line-height:1.6}
-.modal-btns{display:flex;gap:8px}
-.modal-btns button{flex:1;padding:9px;border-radius:8px;border:1px solid #e5e5e5;font-size:13px;cursor:pointer;font-weight:500}
-.modal-ok{background:#1D9E75;color:#fff;border-color:#1D9E75}
-.modal-cancel{background:#fff;color:#111}
+.empty{text-align:center;padding:2rem 1rem;color:#aaa;font-size:13px;background:#fff;border-radius:14px;border:1px solid #e5e5e5}
+.card-base{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid #e5e5e5}
 </style>
 </head>
 <body>
 
-<!-- ===== LOGIN ===== -->
-<div class="screen active" id="screen-login">
-<div class="login-page">
+<!-- ═══════════ LOGIN ═══════════ -->
+<div id="login-screen" class="login-screen">
   <div class="login-box">
-    <div class="login-logo">Operations</div>
-    <div class="login-sub">Select your role to continue</div>
-    <div class="role-grid" id="role-grid">
-      <div class="role-btn" onclick="selRole('owner',this)">
-        <div class="role-icon ri-o">O</div>
-        <div class="role-name">Owner</div>
-        <div class="role-desc">Full overview</div>
-      </div>
-      <div class="role-btn" onclick="selRole('staff',this)">
-        <div class="role-icon ri-s">S</div>
-        <div class="role-name">Staff</div>
-        <div class="role-desc">Challan entry</div>
-      </div>
-      <div class="role-btn" onclick="selRole('supervisor',this)">
-        <div class="role-icon ri-sv">SV</div>
-        <div class="role-name">Supervisor</div>
-        <div class="role-desc">Karigar assign</div>
-      </div>
-      <div class="role-btn" onclick="selRole('delivery',this)">
-        <div class="role-icon ri-d">D</div>
-        <div class="role-name">Delivery</div>
-        <div class="role-desc">Status updates</div>
-      </div>
+    <div class="login-logo">Ops</div>
+    <div class="login-sub">Enter your PIN to continue</div>
+    <div class="pin-display">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
     </div>
-    <div class="name-section" id="name-section">
-      <div style="font-size:12px;color:#888;text-align:center" id="sel-role-label"></div>
-      <input id="name-inp" placeholder="Enter your name" autocomplete="off">
-      <button class="enter-btn" id="enter-btn" onclick="doLogin()">Enter</button>
-      <div class="back-link" onclick="backRoles()">← Choose different role</div>
+    <div class="pin-error" id="pin-error"></div>
+    <div class="pin-pad">
+      <div class="pin-key" onclick="pinKey('1')">1</div>
+      <div class="pin-key" onclick="pinKey('2')">2</div>
+      <div class="pin-key" onclick="pinKey('3')">3</div>
+      <div class="pin-key" onclick="pinKey('4')">4</div>
+      <div class="pin-key" onclick="pinKey('5')">5</div>
+      <div class="pin-key" onclick="pinKey('6')">6</div>
+      <div class="pin-key" onclick="pinKey('7')">7</div>
+      <div class="pin-key" onclick="pinKey('8')">8</div>
+      <div class="pin-key" onclick="pinKey('9')">9</div>
+      <div class="pin-key del" onclick="pinDel()">⌫</div>
+      <div class="pin-key zero" onclick="pinKey('0')">0</div>
     </div>
   </div>
 </div>
-</div>
 
-<!-- ===== APP ===== -->
-<div class="screen" id="screen-app">
-<div class="app-shell">
+<!-- ═══════════ APP ═══════════ -->
+<div id="app" class="app">
   <div class="topbar">
-    <div class="topbar-title" id="app-title">Dashboard</div>
-    <span class="role-badge" id="role-badge"></span>
-    <span class="user-name" id="user-name-lbl"></span>
-    <button class="lo-btn" onclick="logout()">Exit</button>
+    <div class="topbar-title">Ops</div>
+    <div class="user-chip" id="user-chip"></div>
+    <button class="logout-btn" onclick="logout()">Exit</button>
   </div>
-  <div class="tabs" id="tab-bar"></div>
-  <div class="page-content" id="page-content"></div>
-</div>
-</div>
 
-<!-- CONFIRM MODAL -->
-<div class="modal-bg" id="modal">
-  <div class="modal">
-    <div class="modal-title" id="modal-title">Confirm</div>
-    <div class="modal-sub" id="modal-sub"></div>
-    <div class="modal-btns">
-      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
-      <button class="modal-ok" id="modal-ok">Confirm</button>
+  <div class="content">
+    <!-- SITES -->
+    <div class="pg on" id="pg-sites">
+      <div class="pills" id="site-pills"></div>
+      <button class="add-toggle" id="st-toggle" onclick="togForm('st')">+ Add new site</button>
+      <div class="form-box" id="st-form" style="display:none">
+        <div class="form-title">New site</div>
+        <div class="f"><label>Site / client name</label><input id="sf-name" placeholder="e.g. Gupta Residency"></div>
+        <div class="f"><label>Address</label><input id="sf-addr" placeholder="e.g. Sector 22, Chandigarh"></div>
+        <div class="f"><label>Work to be done</label><textarea id="sf-work" placeholder="Describe fully — e.g. Complete electrical wiring, 3 floors, MCB panel"></textarea></div>
+        <div class="g2">
+          <div class="f"><label>Type</label><select id="sf-type">
+            <option>Electrical</option><option>Plumbing</option><option>Civil</option>
+            <option>Carpentry</option><option>Painting</option><option>Fabrication</option><option>General</option>
+          </select></div>
+          <div class="f"><label>Start date</label><input type="date" id="sf-date"></div>
+        </div>
+        <div class="f"><label>Complete by</label><input type="date" id="sf-end"></div>
+        <button class="save-btn" onclick="addSite()">Add site</button>
+      </div>
+      <div id="sites-list"></div>
+    </div>
+
+    <!-- KARIGAR -->
+    <div class="pg" id="pg-karigar">
+      <div class="pills" id="k-pills"></div>
+      <div id="free-banner" style="display:none" class="free-banner">✓ <span id="free-txt"></span> karigar free — ready to work</div>
+      <button class="add-toggle" id="kf-toggle" onclick="togForm('kf')">+ Add karigar / team</button>
+      <div class="form-box" id="kf-form" style="display:none">
+        <div class="form-title">New karigar</div>
+        <div class="g2">
+          <div class="f"><label>Name</label><input id="kf-name" placeholder="Ravi Kumar"></div>
+          <div class="f"><label>Skill</label><select id="kf-skill">
+            <option>Electrical</option><option>Plumbing</option><option>Civil</option>
+            <option>Carpentry</option><option>Painting</option><option>Fabrication</option><option>General</option>
+          </select></div>
+        </div>
+        <div class="g2">
+          <div class="f"><label>WhatsApp no.</label><input id="kf-phone" placeholder="+91 XXXXX XXXXX" type="tel"></div>
+          <div class="f"><label>Team size</label><input id="kf-size" type="number" min="1" value="1"></div>
+        </div>
+        <button class="save-btn" onclick="addKarigar()">Add karigar</button>
+      </div>
+      <div class="chip-row">
+        <div class="chip on" onclick="kChip('all',this)">All</div>
+        <div class="chip" onclick="kChip('free',this)">Free now</div>
+        <div class="chip" onclick="kChip('working',this)">On site</div>
+      </div>
+      <div id="karigar-list"></div>
+    </div>
+
+    <!-- PENDING -->
+    <div class="pg" id="pg-pending">
+      <div class="pills" id="pend-pills"></div>
+      <div id="pending-list"></div>
+    </div>
+
+    <!-- STAFF -->
+    <div class="pg" id="pg-staff">
+      <div class="pills" id="staff-pills"></div>
+      <button class="add-toggle" id="sff-toggle" onclick="togForm('sff')">+ Add staff member</button>
+      <div class="form-box" id="sff-form" style="display:none">
+        <div class="form-title">New staff member</div>
+        <div class="g2">
+          <div class="f"><label>Name</label><input id="sff-name" placeholder="Staff name"></div>
+          <div class="f"><label>Role</label><select id="sff-role">
+            <option value="staff">Staff</option>
+            <option value="supervisor">Supervisor</option>
+          </select></div>
+        </div>
+        <div class="f"><label>4-digit PIN</label><input id="sff-pin" type="number" placeholder="e.g. 1234" maxlength="4" pattern="[0-9]{4}"></div>
+        <div style="background:#fef3c7;border-radius:8px;padding:8px 10px;font-size:12px;color:#92400e;margin-bottom:10px">Share the PIN privately with the staff member. They use it to log in.</div>
+        <button class="save-btn" onclick="addStaff()">Add staff</button>
+      </div>
+      <div id="staff-list"></div>
+    </div>
+
+    <!-- LOG -->
+    <div class="pg" id="pg-log">
+      <div class="card-base">
+        <div style="font-size:14px;font-weight:700;margin-bottom:10px">Activity log</div>
+        <div id="log-list"><div class="empty">No activity yet.</div></div>
+      </div>
     </div>
   </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="nav">
+    <button class="nav-btn on" onclick="goPage('sites',this)"><div class="nav-icon">🏗</div>Sites</button>
+    <button class="nav-btn" onclick="goPage('karigar',this)"><div class="nav-icon">👷</div>Karigar</button>
+    <button class="nav-btn" onclick="goPage('pending',this)"><div class="nav-icon">⏳</div>Pending</button>
+    <button class="nav-btn" onclick="goPage('staff',this)"><div class="nav-icon">👤</div>Staff</button>
+    <button class="nav-btn" onclick="goPage('log',this)"><div class="nav-icon">📋</div>Log</button>
+  </div>
+</div>
+
+<!-- ASSIGN SHEET -->
+<div class="overlay" id="assign-ov">
+  <div class="sheet">
+    <div class="sh-title">Assign karigar</div>
+    <div class="sh-sub" id="assign-sub"></div>
+    <div id="assign-list"></div>
+    <div class="sh-btns">
+      <button class="sh-btn sh-cancel" onclick="closeOv('assign-ov')">Cancel</button>
+      <button class="sh-btn sh-ok" onclick="doAssign()">Assign & send WhatsApp ↗</button>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS SHEET -->
+<div class="overlay" id="status-ov">
+  <div class="sheet">
+    <div class="sh-title" id="st-sh-title">Update status</div>
+    <div class="sh-sub" id="st-sh-sub"></div>
+    <div class="pct-big" id="pct-lbl">0%</div>
+    <input class="pct-slider" type="range" id="pct-slider" min="0" max="100" step="5" value="0" oninput="document.getElementById('pct-lbl').textContent=this.value+'%'">
+    <div style="font-size:12px;font-weight:600;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.3px">Issue</div>
+    <div class="issue-grid">
+      <div class="issue-opt on" onclick="pickIssue('none',this)">No issue</div>
+      <div class="issue-opt" onclick="pickIssue('material',this)">No material</div>
+      <div class="issue-opt" onclick="pickIssue('access',this)">Site access</div>
+      <div class="issue-opt" onclick="pickIssue('manpower',this)">Need more hands</div>
+      <div class="issue-opt" onclick="pickIssue('design',this)">Design change</div>
+      <div class="issue-opt" onclick="pickIssue('other',this)">Other</div>
+    </div>
+    <div class="f"><label>Note</label><input id="st-note" placeholder="e.g. Ground floor done, starting second"></div>
+    <div class="sh-btns" style="margin-top:12px">
+      <button class="sh-btn sh-cancel" onclick="closeOv('status-ov')">Cancel</button>
+      <button class="sh-btn sh-ok" onclick="saveStatus()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ASSIGN K→SITE SHEET -->
+<div class="overlay" id="ksite-ov">
+  <div class="sheet">
+    <div class="sh-title">Choose site</div>
+    <div class="sh-sub" id="ksite-sub"></div>
+    <div id="ksite-list"></div>
+    <div class="sh-btns"><button class="sh-btn sh-cancel" onclick="closeOv('ksite-ov')">Cancel</button></div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <div class="lightbox-close">✕</div>
+  <img id="lightbox-img" src="" alt="photo">
 </div>
 
 <script>
-// ── STATE ───────────────────────────────────────────────────
-const API    = "";  // same origin
-let role     = "";
-let userName = "";
-let data     = { challans: [], jobs: [], deliveries: [], log: [] };
-let parsedItems = [];
-let waChats  = {};
+const API="";
+const COLORS=[{bg:"#dbeafe",c:"#1d4ed8"},{bg:"#dcfce7",c:"#15803d"},{bg:"#ede9fe",c:"#5b21b6"},{bg:"#fef3c7",c:"#92400e"},{bg:"#fce7f3",c:"#9d174d"},{bg:"#e0f2fe",c:"#0369a1"},{bg:"#f3e8ff",c:"#6b21a8"},{bg:"#fee2e2",c:"#dc2626"}];
+const col=i=>COLORS[((i%COLORS.length)+COLORS.length)%COLORS.length];
+const ini=n=>n.trim().split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+const today=()=>new Date().toISOString().split("T")[0];
+const fmtD=d=>{if(!d)return"";const p=d.split("-");return p[2]+"/"+p[1];};
+const dLeft=d=>{if(!d)return null;return Math.ceil((new Date(d)-new Date())/86400000);};
+const pCol=p=>p>=80?"#15803d":p>=40?"#d97706":"#2563eb";
 
-let TEAMS = [
-  { id:1, name:"Team Alpha", lead:"Ravi Kumar",   phone:"+919876500001", members:3, spec:"Electrical", status:"available", from:"08:00", until:"17:00", notes:"" },
-  { id:2, name:"Team Beta",  lead:"Suresh Singh", phone:"+919876500002", members:2, spec:"Plumbing",   status:"available", from:"09:00", until:"18:00", notes:"" },
-  { id:3, name:"Team Gamma", lead:"Ajay Sharma",  phone:"+919876500003", members:4, spec:"Civil",      status:"available", from:"07:00", until:"16:00", notes:"" },
-  { id:4, name:"Team Delta", lead:"Neha Verma",   phone:"+919876500004", members:2, spec:"Carpentry",  status:"available", from:"10:00", until:"19:00", notes:"" },
-  { id:5, name:"Team Echo",  lead:"Mohan Das",    phone:"+919876500005", members:3, spec:"General",    status:"available", from:"09:00", until:"18:00", notes:"" },
-];
-let teamNextId = 6;
-let teamEditId = null;
-let teamDelId  = null;
+let D={sites:[],karigars:[],log:[],staff:[]};
+let me=null, curSite=null, curK=null, selKs=[], curIssue="none", kFilter="all";
+let pinVal="";
 
-const AV_COLORS = [
-  {bg:"#dbeafe",color:"#1d4ed8"},{bg:"#dcfce7",color:"#166534"},
-  {bg:"#ede9fe",color:"#5b21b6"},{bg:"#fef3c7",color:"#92400e"},
-  {bg:"#fee2e2",color:"#991b1b"},{bg:"#e0f2fe",color:"#0369a1"},
-  {bg:"#f3e8ff",color:"#6b21a8"},{bg:"#fce7f3",color:"#9d174d"},
-];
-function tmColor(idx){ return AV_COLORS[idx % AV_COLORS.length]; }
-function tmInitials(name){ return name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase(); }
-function tmStatusBadge(s){
-  const m={"on-site":"b-green","available":"b-blue","in-transit":"b-amber","off":"b-gray"};
-  const l={"on-site":"On site","available":"Available","in-transit":"In transit","off":"Off duty"};
-  return `<span class="badge ${m[s]||"b-gray"}">${l[s]||s}</span>`;
+// ── PIN LOGIN ────────────────────────────────────────────────
+function pinKey(k) {
+  if (pinVal.length>=4) return;
+  pinVal+=k;
+  updateDots();
+  if (pinVal.length===4) setTimeout(tryLogin,120);
 }
-function tmDotColor(s){ return s==="on-site"?"#16a34a":s==="available"?"#2563eb":s==="in-transit"?"#d97706":"#9ca3af"; }
-
-const DELIVERY_PERSONS = [
-  { id:1, name:"Ramesh Driver",   phone:"+919876511001" },
-  { id:2, name:"Vikram Transport", phone:"+919876511002" },
-  { id:3, name:"Sunil Logistics",  phone:"+919876511003" },
-];
-
-const STATUS_FLOW = [
-  { key:"loading",    label:"Loading goods",        desc:"Goods being loaded in vehicle" },
-  { key:"dispatched", label:"Dispatched",           desc:"Left from warehouse" },
-  { key:"reached",    label:"Reached client",       desc:"At delivery address" },
-  { key:"delivered",  label:"Delivered & confirmed",desc:"Client received goods" },
-];
-
-// ── HELPERS ─────────────────────────────────────────────────
-const tnow = () => { const d=new Date(); return d.getHours().toString().padStart(2,"0")+":"+d.getMinutes().toString().padStart(2,"0"); };
-const today = () => new Date().toISOString().split("T")[0];
-
-async function api(endpoint, body) {
-  const opts = body
-    ? { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) }
-    : { method:"GET" };
-  const r = await fetch(API + endpoint, opts);
-  return r.json();
+function pinDel() { pinVal=pinVal.slice(0,-1); updateDots(); document.getElementById("pin-error").textContent=""; }
+function updateDots() {
+  for(let i=0;i<4;i++){
+    const d=document.getElementById("pd"+i);
+    d.classList.toggle("filled",i<pinVal.length);
+  }
+}
+async function tryLogin() {
+  const r=await callAPI("/api/auth/login",{pin:pinVal});
+  if(r&&r.ok){
+    me=r.staff;
+    document.getElementById("login-screen").style.display="none";
+    document.getElementById("app").classList.add("on");
+    document.getElementById("user-chip").textContent=me.name;
+    await syncData(); renderAll();
+  } else {
+    document.getElementById("pin-error").textContent="Wrong PIN. Try again.";
+    pinVal=""; updateDots();
+  }
+}
+function logout(){
+  me=null; pinVal=""; updateDots();
+  document.getElementById("app").classList.remove("on");
+  document.getElementById("login-screen").style.display="flex";
+  document.getElementById("pin-error").textContent="";
 }
 
-async function loadData() {
-  try { const d = await api("/api/data"); data = d; } catch(e) { console.warn("Offline mode"); }
+// ── API ──────────────────────────────────────────────────────
+async function callAPI(endpoint, body) {
+  try {
+    const r=await fetch(API+endpoint, body?{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}:{method:"GET"});
+    return await r.json();
+  } catch(e){ return null; }
 }
+async function syncData(){const r=await callAPI("/api/data");if(r)D=r;}
 
-function showToast(id, msg, type="ok") {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.textContent = msg;
-  el.className = `toast toast-${type}`;
-  el.style.display = "block";
-  setTimeout(() => el.style.display = "none", 2800);
-}
-
-function openModal(title, sub, onOk) {
-  document.getElementById("modal-title").textContent = title;
-  document.getElementById("modal-sub").textContent   = sub;
-  document.getElementById("modal-ok").onclick        = () => { closeModal(); onOk(); };
-  document.getElementById("modal").classList.add("show");
-}
-function closeModal() { document.getElementById("modal").classList.remove("show"); }
-
-function openWA(phone, msg) {
-  const p = phone.replace(/\D/g,"");
-  window.open("https://wa.me/"+p+"?text="+encodeURIComponent(msg),"_blank");
-}
-
-// ── LOGIN ───────────────────────────────────────────────────
-let selRoleVal = "";
-function selRole(r, el) {
-  selRoleVal = r;
-  document.querySelectorAll(".role-btn").forEach(b => b.classList.remove("selected"));
-  el.classList.add("selected");
-  document.getElementById("name-section").style.display = "flex";
-  const labels = { owner:"Owner — Full control", staff:"Staff — Challan entry & delivery", supervisor:"Supervisor — Karigar assignment", delivery:"Delivery — Status updates" };
-  document.getElementById("sel-role-label").textContent = labels[r];
-  const colors = { owner:"#185FA5", staff:"#1D9E75", supervisor:"#534AB7", delivery:"#d97706" };
-  document.getElementById("enter-btn").style.background = colors[r];
-  document.getElementById("name-inp").focus();
-}
-function backRoles() {
-  document.getElementById("name-section").style.display = "none";
-  document.querySelectorAll(".role-btn").forEach(b => b.classList.remove("selected"));
-}
-
-async function doLogin() {
-  const name = document.getElementById("name-inp").value.trim();
-  if (!name) return;
-  role = selRoleVal; userName = name;
-  await loadData();
-  document.getElementById("screen-login").classList.remove("active");
-  document.getElementById("screen-app").classList.add("active");
-  const roleLabels = { owner:"Owner", staff:"Staff", supervisor:"Supervisor", delivery:"Delivery" };
-  const roleCls    = { owner:"rb-owner", staff:"rb-staff", supervisor:"rb-supervisor", delivery:"rb-delivery" };
-  document.getElementById("role-badge").textContent  = roleLabels[role];
-  document.getElementById("role-badge").className    = `role-badge ${roleCls[role]}`;
-  document.getElementById("user-name-lbl").textContent = name;
-  buildUI();
-}
-
-function logout() {
-  document.getElementById("screen-app").classList.remove("active");
-  document.getElementById("screen-login").classList.add("active");
-  document.getElementById("name-inp").value = "";
-  document.querySelectorAll(".role-btn").forEach(b => b.classList.remove("selected"));
-  document.getElementById("name-section").style.display = "none";
-  role = ""; userName = "";
-}
-
-// ── UI BUILDER ──────────────────────────────────────────────
-const ROLES = {
-  owner:      { title:"Owner dashboard",          tabs:["Dashboard","Challans","Karigar jobs","Teams","Delivery","Log"] },
-  staff:      { title:"Staff — Challan entry",    tabs:["Paste challan","My challans","Delivery update"] },
-  supervisor: { title:"Supervisor",               tabs:["Unassigned","Assign karigar","Progress","WhatsApp","Finalize"] },
-  delivery:   { title:"Delivery",                 tabs:["My deliveries","Quick update"] },
-};
-
-function buildUI() {
-  const cfg = ROLES[role];
-  document.getElementById("app-title").textContent = cfg.title;
-  const tb = document.getElementById("tab-bar");
-  tb.innerHTML = cfg.tabs.map((t,i) => `<button class="tab ${i===0?"on":""}" onclick="switchTab(${i},this)">${t}</button>`).join("");
-  renderTab(0);
-}
-
-function switchTab(idx, el) {
-  document.querySelectorAll(".tab").forEach(t => t.classList.remove("on"));
+// ── PAGES ────────────────────────────────────────────────────
+function goPage(p,el){
+  document.querySelectorAll(".pg").forEach(x=>x.classList.remove("on"));
+  document.querySelectorAll(".nav-btn").forEach(x=>x.classList.remove("on"));
+  document.getElementById("pg-"+p).classList.add("on");
   el.classList.add("on");
-  renderTab(idx);
+  render(p);
+}
+function render(p){
+  if(p==="sites")   renderSites();
+  if(p==="karigar") renderKarigars();
+  if(p==="pending") renderPending();
+  if(p==="staff")   renderStaff();
+  if(p==="log")     renderLog();
+}
+function renderAll(){renderSites();renderKarigars();renderPending();renderStaff();renderLog();}
+
+// ── FORMS ────────────────────────────────────────────────────
+function togForm(id){
+  const f=document.getElementById(id+"-form");
+  const b=document.getElementById(id+"-toggle");
+  const open=f.style.display==="none"||!f.style.display;
+  f.style.display=open?"block":"none";
+  b.className=open?"add-toggle open":"add-toggle";
+  const labels={st:"+ Add new site",kf:"+ Add karigar / team",sff:"+ Add staff member"};
+  b.textContent=open?"✕ Close":labels[id];
+  if(open&&id==="st") document.getElementById("sf-date").value=today();
 }
 
-function renderTab(idx) {
-  const content = document.getElementById("page-content");
-  if (role === "owner")      content.innerHTML = ownerTab(idx);
-  if (role === "staff")      content.innerHTML = staffTab(idx);
-  if (role === "supervisor") content.innerHTML = supervisorTab(idx);
-  if (role === "delivery")   content.innerHTML = deliveryTab(idx);
-  afterRender(idx);
-}
+// ── SITES ────────────────────────────────────────────────────
+function renderSites(){
+  const noK=D.sites.filter(s=>!s.karigar.length&&s.pct<100).length;
+  const issue=D.sites.filter(s=>s.issue&&s.issue!=="none").length;
+  document.getElementById("site-pills").innerHTML=[
+    {v:D.sites.length,l:"Total",cls:""},
+    {v:D.sites.filter(s=>s.status==="active").length,l:"Active",cls:"pill-green"},
+    {v:noK,l:"No karigar",cls:"pill-red"},
+    {v:issue,l:"Issues",cls:"pill-amber"},
+  ].map(p=>`<div class="pill ${p.cls}"><div class="pill-v">${p.v}</div><div class="pill-l">${p.l}</div></div>`).join("");
 
-// ── SHARED RENDERERS ─────────────────────────────────────────
-function badgeChallan(s) {
-  const m = { pending:"b-gray", assigned:"b-blue", dispatched:"b-amber", delivered:"b-green" };
-  return `<span class="badge ${m[s]||"b-gray"}">${s}</span>`;
-}
-function badgeJob(s) {
-  const m = { assigned:"b-blue", "in-progress":"b-amber", done:"b-green" };
-  return `<span class="badge ${m[s]||"b-gray"}">${s}</span>`;
-}
-function badgeDelivery(s) {
-  const m = { pending:"b-gray", loading:"b-amber", dispatched:"b-blue", reached:"b-purple", delivered:"b-green" };
-  return `<span class="badge ${m[s]||"b-gray"}">${s}</span>`;
-}
-function pColor(p) { return p>=75?"#16a34a":p>=40?"#d97706":"#2563eb"; }
+  const el=document.getElementById("sites-list");
+  if(!D.sites.length){el.innerHTML=`<div class="empty">No sites yet.<br>Add your first site above.</div>`;return;}
 
-function progressRing(pct, size=52) {
-  const r=18, c=Math.PI*2*r, off=c*(1-pct/100), col=pColor(pct);
-  return `<svg width="${size}" height="${size}" viewBox="0 0 44 44">
-    <circle cx="22" cy="22" r="${r}" fill="none" stroke="#e5e5e5" stroke-width="5"/>
-    <circle cx="22" cy="22" r="${r}" fill="none" stroke="${col}" stroke-width="5"
-      stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"
-      stroke-linecap="round" transform="rotate(-90 22 22)"/>
-    <text x="22" y="27" text-anchor="middle" font-size="11" font-weight="600" fill="${col}">${pct}%</text>
-  </svg>`;
-}
-
-function jobCards(jobs) {
-  if (!jobs.length) return `<p style="font-size:12px;color:#888">No jobs yet.</p>`;
-  return `<div class="job-grid">${jobs.map(j => {
-    const ch = data.challans.find(c => c.id === j.challan);
-    const hasIssue = j.issue && j.issue !== "none";
-    return `<div class="job-card">
-      <div class="jc-title">${j.id} — ${j.type}</div>
-      <div class="jc-sub">${j.team} · ${ch ? ch.client : j.challan}</div>
-      <div class="ring-row">
-        ${progressRing(j.pct||0)}
-        <div class="ring-info">
-          <div class="pct">${j.pct||0}%</div>
-          <div class="pct-sub">${j.status==="done"?"Complete":j.status==="assigned"?"Not started":"In progress"}</div>
-          ${j.lastNote?`<div style="font-size:11px;color:#888;margin-top:2px">${j.lastNote}</div>`:""}
-        </div>
-      </div>
-      <div class="issue-pill ${hasIssue?"ip-red":"ip-green"}">${hasIssue?"⚠ "+j.issue:"✓ No issues"}</div>
-    </div>`;
-  }).join("")}</div>`;
-}
-
-function challanRows(list) {
-  if (!list.length) return `<p style="font-size:12px;color:#888">No challans yet.</p>`;
-  return list.map(c => `<div class="row">
-    <div class="row-info">
-      <div class="row-name">${c.id} — ${c.client}</div>
-      <div class="row-sub">${c.addr} · ${(c.items||[]).length} item(s) · ${c.date} · by ${c.by}</div>
-    </div>
-    ${badgeChallan(c.status)}
-  </div>`).join("");
-}
-
-function logRows() {
-  return `<ul class="log-list">${(data.log||[]).map(l => `<li>
-    <span class="log-t">${l.t}</span>
-    <span class="log-dot ${l.type==="assign"?"ld-g":l.type==="progress"?"ld-a":l.type==="delivery"?"ld-b":"ld-d"}"></span>
-    <span>${l.txt}</span>
-  </li>`).join("")}</ul>`;
-}
-
-// ── OWNER TABS ───────────────────────────────────────────────
-function ownerTab(idx) {
-  const pending = (data.challans||[]).filter(c=>c.status==="pending");
-  if (idx===0) return `
-    <div class="metrics">
-      <div class="met"><div class="met-v">${(data.challans||[]).length}</div><div class="met-l">Challans</div></div>
-      <div class="met"><div class="met-v">${(data.jobs||[]).length}</div><div class="met-l">Karigar jobs</div></div>
-      <div class="met"><div class="met-v">${pending.length}</div><div class="met-l">Unassigned</div></div>
-      <div class="met"><div class="met-v">${(data.jobs||[]).filter(j=>j.status==="done").length}</div><div class="met-l">Completed</div></div>
-    </div>
-    ${pending.length?`<div style="background:#fef3c7;border-radius:10px;padding:10px 14px;font-size:13px;color:#92400e;margin-bottom:12px">⚠ ${pending.length} challan(s) waiting for karigar assignment</div>`:""}
-    <div class="card"><div class="card-title">Work progress</div>${jobCards(data.jobs||[])}</div>
-    <div class="card"><div class="card-title">Recent challans</div>${challanRows((data.challans||[]).slice(0,5))}</div>`;
-  if (idx===1) return `<div class="card"><div class="card-title">All challans</div>${challanRows(data.challans||[])}</div>`;
-  if (idx===2) return `<div class="card"><div class="card-title">Karigar jobs</div>${jobCards(data.jobs||[])}</div>`;
-  if (idx===3) return teamManagementHTML();
-  if (idx===4) return `<div class="card"><div class="card-title">Deliveries</div>${(data.deliveries||[]).map(d=>`<div class="row">
-    <div class="row-info"><div class="row-name">${d.id} — ${d.challan}</div><div class="row-sub">${d.person} · ${d.vehicle||""}</div></div>
-    ${badgeDelivery(d.status)}
-  </div>`).join("")||`<p style="font-size:12px;color:#888">No deliveries.</p>`}</div>`;
-  if (idx===5) return `<div class="card"><div class="card-title">Activity log</div>${logRows()}</div>`;
-  return "";
-}
-
-// ── STAFF TABS ───────────────────────────────────────────────
-function staffTab(idx) {
-  if (idx===0) return `
-    <div class="card">
-      <div class="card-title">Paste challan from your software</div>
-      <div style="background:#dbeafe;border-radius:8px;padding:10px 12px;font-size:12px;color:#1d4ed8;margin-bottom:12px">
-        Copy the table from your challan software → paste below. System reads items automatically.
-      </div>
-      <div class="fg">
-        <div><label>Challan no.</label><input id="s-chno" placeholder="CH-2026-XXX" value="CH-2026-00${(data.challans||[]).length+1}"></div>
-        <div><label>Client name</label><input id="s-client" placeholder="Party / client name"></div>
-        <div class="fc"><label>Delivery address</label><input id="s-addr" placeholder="Full delivery address"></div>
-        <div><label>Contact person</label><input id="s-contact" placeholder="Name"></div>
-        <div><label>Contact phone</label><input id="s-phone" placeholder="+91 XXXXX XXXXX"></div>
-      </div>
-      <div style="margin-top:12px">
-        <label style="font-size:11px;color:#888;display:block;margin-bottom:6px;font-weight:500">Paste challan table (Ctrl+V)</label>
-        <textarea class="paste-box" id="paste-box" placeholder="Paste table here...&#10;&#10;Example:&#10;Item Name&#9;Qty&#9;Unit&#10;Electrical Wire&#9;50&#9;mtr&#10;MCB 32A&#9;4&#9;pcs" oninput="scheduleParse()"></textarea>
-      </div>
-      <div id="parsed-section" style="display:none;margin-top:12px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <span style="font-size:11px;color:#888;font-weight:500">Parsed items — edit if needed</span>
-          <button class="btn" style="font-size:11px;padding:4px 10px" onclick="addBlankRow()">+ Add row</button>
-        </div>
-        <table class="parsed-tbl">
-          <thead><tr><th style="width:55%">Description</th><th style="width:18%">Qty</th><th style="width:17%">Unit</th><th style="width:10%"></th></tr></thead>
-          <tbody id="parsed-body"></tbody>
-        </table>
-      </div>
-      <div class="fg" style="margin-top:10px">
-        <div class="fc"><label>Notes / instructions</label><textarea id="s-notes" placeholder="Any notes for karigar or delivery…"></textarea></div>
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-green" onclick="submitChallan()">Submit challan</button>
-      </div>
-      <div class="toast toast-ok" id="s-toast"></div>
-    </div>`;
-  if (idx===1) return `<div class="card"><div class="card-title">Submitted challans</div>${challanRows(data.challans||[])}</div>`;
-  if (idx===2) return `
-    <div class="card">
-      <div class="card-title">Update delivery status</div>
-      <div class="fg">
-        <div><label>Delivery order</label><select id="s-dord">${(data.deliveries||[]).map(d=>`<option value="${d.id}">${d.id} — ${d.challan}</option>`).join("")}</select></div>
-        <div><label>New status</label><select id="s-dstat">
-          <option value="loading">Loading goods</option>
-          <option value="dispatched">Dispatched</option>
-          <option value="in-transit">In transit</option>
-          <option value="reached">Reached client</option>
-          <option value="delivered">Delivered & confirmed</option>
-        </select></div>
-        <div class="fc"><label>Note</label><input id="s-dnote" placeholder="Optional note"></div>
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-green" onclick="sUpdateDelivery()">Update status</button>
-        <button class="btn btn-wa" onclick="sNotifyClient()">Update & notify client</button>
-      </div>
-      <div class="toast toast-ok" id="s-dt"></div>
-    </div>
-    <div class="card"><div class="card-title">Active deliveries</div>${(data.deliveries||[]).map(d=>`<div class="row">
-      <div class="row-info"><div class="row-name">${d.id} — ${d.challan}</div><div class="row-sub">${d.person} · ${d.vehicle||""}</div></div>
-      ${badgeDelivery(d.status)}
-    </div>`).join("")||`<p style="font-size:12px;color:#888">No deliveries.</p>`}</div>`;
-  return "";
-}
-
-// ── SUPERVISOR TABS ──────────────────────────────────────────
-function supervisorTab(idx) {
-  const pending = (data.challans||[]).filter(c=>c.status==="pending");
-  if (idx===0) return `
-    <div class="card">
-      <div class="card-title">Challans waiting for karigar assignment</div>
-      ${pending.length ? pending.map(c=>`<div class="unassigned-item">
-        <div><div class="ui-title">${c.id} — ${c.client}</div>
-        <div class="ui-sub">${c.addr} · ${(c.items||[]).length} items · by ${c.by}</div></div>
-        <button class="btn btn-primary" style="font-size:12px;white-space:nowrap" onclick="quickAssign('${c.id}')">Assign →</button>
-      </div>`).join("") : `<p style="font-size:12px;color:#888">All challans assigned!</p>`}
-    </div>`;
-  if (idx===1) return `
-    <div class="card">
-      <div class="card-title">Assign karigar to challan</div>
-      <div class="fg">
-        <div><label>Challan</label><select id="sv-ch" onchange="svFill()">${(data.challans||[]).map(c=>`<option value="${c.id}">${c.id} — ${c.client} [${c.status}]</option>`).join("")}</select></div>
-        <div><label>Team / karigar</label><select id="sv-team">${TEAMS.map(t=>`<option value="${t.id}">${t.name} — ${t.lead} (${t.status})</option>`).join("")}</select></div>
-        <div><label>Work type</label><select id="sv-wtype">
-          <option>Electrical installation</option><option>Plumbing</option><option>Civil work</option>
-          <option>Fabrication</option><option>Carpentry</option><option>Painting</option>
-          <option>Inspection</option><option>Maintenance</option><option>Assembly</option>
-        </select></div>
-        <div><label>Date</label><input type="date" id="sv-date" value="${today()}"></div>
-        <div><label>Start time</label><input type="time" id="sv-stime" value="09:00"></div>
-        <div><label>Duration</label><select id="sv-dur">
-          <option>1-2 hours</option><option>2-4 hours</option><option>Half day</option>
-          <option>Full day</option><option>2 days</option><option>3+ days</option>
-        </select></div>
-        <div class="fc" style="background:#f9fafb;padding:10px;border-radius:8px">
-          <p style="font-size:11px;color:#888;margin-bottom:4px;font-weight:500">Challan details</p>
-          <div id="sv-ch-detail" style="font-size:12px;color:#111;line-height:1.8"></div>
-        </div>
-        <div class="fc"><label>Instructions for karigar</label><textarea id="sv-notes" placeholder="What to do, tools needed…"></textarea></div>
-      </div>
-      <div class="btn-row">
-        <button class="btn" onclick="svPreview()">Preview WhatsApp</button>
-        <button class="btn btn-wa" onclick="svAssign()">Assign & send WhatsApp</button>
-      </div>
-      <div id="sv-wa-preview" style="display:none;margin-top:12px"></div>
-      <div class="toast toast-ok" id="sv-toast"></div>
-    </div>`;
-  if (idx===2) return `
-    <div class="card">
-      <div class="card-title">Update job progress</div>
-      <div class="fg">
-        <div><label>Job</label><select id="sv-pjob" onchange="svLoadPct()">${(data.jobs||[]).map(j=>`<option value="${j.id}">${j.id} — ${j.challan} (${j.team})</option>`).join("")}</select></div>
-        <div><label>% work done</label>
-          <div style="display:flex;align-items:center;gap:8px">
-            <input type="range" id="sv-pct" min="0" max="100" step="5" value="0" oninput="document.getElementById('sv-pct-v').textContent=this.value+'%'" style="flex:1">
-            <span id="sv-pct-v" style="font-size:13px;font-weight:600;min-width:36px">0%</span>
+  el.innerHTML=D.sites.map(s=>{
+    const ks=D.karigars.filter(k=>s.karigar.includes(k.id));
+    const pc=pCol(s.pct), hi=s.issue&&s.issue!=="none";
+    const dl=dLeft(s.end);
+    const dlHtml=dl===null?"":(dl<0?`<span style="color:#dc2626;font-weight:700">${Math.abs(dl)}d overdue</span>`:dl===0?`<span style="color:#d97706;font-weight:700">Due today</span>`:`<span>${dl}d left</span>`);
+    const sbadge=s.pct>=100?`<span class="badge b-green">Done ✓</span>`:s.status==="assigned"?`<span class="badge b-purple">Awaiting</span>`:hi?`<span class="badge b-red">Issue</span>`:s.karigar.length?`<span class="badge b-blue">Active</span>`:`<span class="badge b-amber">No karigar</span>`;
+    const photos=(s.photos||[]);
+    return `<div class="site-card">
+      <div class="sc-row">
+        <div style="flex:1;min-width:0">
+          <div class="sc-name">${s.name}</div>
+          <div class="sc-meta">${s.addr} · ${s.type}</div>
+          <div class="sc-work">📋 ${s.work}</div>
+          <div class="sc-dates">
+            <span>📅 ${fmtD(s.date)}</span>
+            ${s.end?`<span>🏁 ${fmtD(s.end)}</span><span>${dlHtml}</span>`:""}
           </div>
-        </div>
-        <div><label>Issue</label><select id="sv-issue">
-          <option value="none">No issue</option>
-          <option value="material">Material shortage</option>
-          <option value="access">Site access problem</option>
-          <option value="design">Design change needed</option>
-          <option value="manpower">Need more manpower</option>
-          <option value="other">Other issue</option>
-        </select></div>
-        <div><label>Issue note</label><input id="sv-issue-note" placeholder="Describe issue if any"></div>
-        <div class="fc"><label>Update note</label><input id="sv-upd-note" placeholder="e.g. Ground floor done, moving to first floor"></div>
+        </div>${sbadge}
       </div>
-      <div class="btn-row">
-        <button class="btn btn-green" onclick="svSaveProgress()">Save progress</button>
-        <button class="btn btn-wa" onclick="svNotifyOwner()">Save & notify owner</button>
+      <div class="prog-wrap">
+        <div class="prog-bg"><div class="prog-fill" style="width:${s.pct}%;background:${pc}"></div></div>
+        <div class="prog-pct" style="color:${pc}">${s.pct}%</div>
       </div>
-      <div class="toast toast-ok" id="sv-prog-toast"></div>
-    </div>
-    <div class="card"><div class="card-title">All job progress</div>${jobCards(data.jobs||[])}</div>`;
-  if (idx===3) return `
-    <div class="card">
-      <div class="card-title">WhatsApp — karigar updates</div>
-      <div class="fg" style="margin-bottom:12px">
-        <div><label>Job / karigar</label><select id="wa-job">${(data.jobs||[]).map(j=>`<option value="${j.id}">${j.id} — ${j.team}</option>`).join("")}</select></div>
-        <div><label>Quick template</label><select id="wa-quick" onchange="waFill()">
-          <option value="">Custom message</option>
-          <option value="start">Work started — please update every 2 hrs</option>
-          <option value="pct">Please share current % done and any issues</option>
-          <option value="issue">Describe the issue — we will arrange support</option>
-          <option value="done">100% done? Please send finalization photos</option>
-        </select></div>
+      ${ks.length?`<div class="k-tags">${ks.map(k=>{const c=col(D.karigars.indexOf(k));return`<div class="k-tag" onclick="removeKFromSite(${s.id},${k.id})"><div class="k-av" style="background:${c.bg};color:${c.c}">${ini(k.name)}</div>${k.name.split(" ")[0]} ✕</div>`;}).join("")}</div>`:`<div class="no-k">⚠ No karigar assigned</div>`}
+      ${hi?`<div class="issue-box">⚠ ${s.issue}</div>`:""}
+      ${s.note?`<div class="note-box">📝 ${s.note}</div>`:""}
+      ${s.status==="assigned"&&ks.length?`<div class="wa-waiting"><div class="wa-dot"></div>WhatsApp sent — waiting for accept</div>`:""}
+      ${photos.length?`<div><div class="photo-label">📸 Completion photos (${photos.length})</div><div class="photos-row">${photos.map(ph=>`<img class="photo-thumb" src="${ph.url}" onclick="openLightbox('${ph.url}')" alt="photo">`).join("")}</div></div>`:""}
+      <div class="sc-btns">
+        <button class="sc-btn btn-assign" onclick="openAssign(${s.id})">Assign</button>
+        <button class="sc-btn btn-status" onclick="openStatus(${s.id})">Update %</button>
+        <button class="sc-btn btn-wa" onclick="siteWA(${s.id})">WA</button>
+        <button class="sc-btn btn-del" onclick="delSite(${s.id})">Del</button>
       </div>
-      <div class="wa-chat" id="wa-chat">
-        <div style="font-size:11px;color:#667;margin-bottom:8px" id="wa-chat-hdr">Select a job above</div>
-        <div class="wa-msgs" id="wa-msgs"></div>
-        <div class="wa-inp-row">
-          <textarea id="wa-inp" rows="1" placeholder="Type message…"></textarea>
-          <button class="wa-send-btn" onclick="waSend()">Send</button>
-        </div>
-      </div>
-      <div style="margin-top:10px">
-        <p style="font-size:11px;color:#888;margin-bottom:6px">Simulate karigar reply (for testing)</p>
-        <div class="quick-replies">
-          <div class="qr" onclick="karigarReply('70% done. No issues.')">70% done</div>
-          <div class="qr" onclick="karigarReply('issue: material nahi hai')">Issue: no material</div>
-          <div class="qr" onclick="karigarReply('100% done. Kaam khatam.')">100% done</div>
-          <div class="qr" onclick="karigarReply('Sab theek hai.')">All good</div>
-        </div>
-      </div>
-    </div>`;
-  if (idx===4) return `
-    <div class="card">
-      <div class="card-title">Job finalization</div>
-      <div class="fg">
-        <div><label>Completed job</label><select id="fin-job">${(data.jobs||[]).map(j=>`<option value="${j.id}">${j.id} — ${j.team} — ${j.challan}</option>`).join("")}</select></div>
-        <div><label>Completion date</label><input type="date" id="fin-date" value="${today()}"></div>
-        <div class="fc"><label>Final remarks</label><textarea id="fin-remarks" placeholder="Any pending items, client feedback…"></textarea></div>
-      </div>
-      <div style="border:2px dashed #e5e5e5;border-radius:10px;padding:20px;text-align:center;cursor:pointer;color:#888;font-size:13px;margin-top:10px" onclick="document.getElementById('fin-file').click()">
-        Tap to upload finalization photos
-        <input type="file" id="fin-file" multiple accept="image/*" style="display:none" onchange="handleFinPhotos(event)">
-      </div>
-      <div id="fin-photos" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div>
-      <div class="btn-row">
-        <button class="btn btn-green" onclick="finalize()">Mark as complete</button>
-        <button class="btn btn-wa" onclick="finalizeAndNotify()">Complete & notify owner</button>
-      </div>
-      <div class="toast toast-ok" id="fin-toast"></div>
-    </div>`;
-  return "";
-}
-
-// ── DELIVERY TABS ────────────────────────────────────────────
-function deliveryTab(idx) {
-  const myD = data.deliveries||[];
-  if (idx===0) {
-    if (!myD.length) return `<div style="text-align:center;padding:3rem 1rem"><div style="font-size:48px;margin-bottom:12px">📦</div><p style="font-size:15px;font-weight:600;color:#111">No deliveries assigned</p><p style="font-size:13px;color:#888;margin-top:6px">Your supervisor will assign deliveries here.</p></div>`;
-    return myD.map(d => {
-      const si = STATUS_FLOW.findIndex(s=>s.key===d.status);
-      const ch = data.challans.find(c=>c.id===d.challan);
-      const steps = STATUS_FLOW.map((s,i)=>{
-        const done   = i<=si&&si>=0;
-        const next   = i===si+1||(si===-1&&i===0);
-        const cls    = done?"done":next?"active-step":"pending-step";
-        return `<div class="d-step">
-          <div class="d-circle ${cls}">${done?"✓":i+1}</div>
-          <div class="d-body">
-            <div class="d-name">${s.label}</div>
-            <div class="d-desc">${s.desc}</div>
-            ${next?`<button class="d-action" onclick="dConfirmStatus('${d.id}','${s.key}','${s.label}')">Mark as ${s.label}</button>`:""}
-          </div>
-        </div>`;
-      }).join("");
-      return `<div class="card">
-        <div style="font-size:12px;color:#888;margin-bottom:4px">${d.id} · ${d.challan} · ${d.vehicle||""}</div>
-        <div style="font-size:17px;font-weight:600;color:#111;margin-bottom:2px">${ch?ch.client:d.challan}</div>
-        <div style="font-size:13px;color:#888;margin-bottom:12px">${d.addr}</div>
-        ${ch?`<div style="background:#f9fafb;border-radius:8px;padding:10px;margin-bottom:12px">
-          <div style="font-size:11px;color:#888;margin-bottom:4px;font-weight:500">Goods</div>
-          ${ch.items.map(i=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #f3f4f6"><span>${i.desc}</span><span style="color:#888">${i.qty} ${i.unit}</span></div>`).join("")}
-        </div>`:""}
-        <div class="d-steps">${steps}</div>
-      </div>`;
-    }).join("");
-  }
-  if (idx===1) return `
-    <div class="card">
-      <div class="card-title">Quick WhatsApp update</div>
-      <p style="font-size:12px;color:#888;margin-bottom:10px">Tap to send status directly on WhatsApp</p>
-      <div class="quick-replies" style="margin-bottom:0">
-        <div class="qr" onclick="dWA('Loaded — goods loaded in vehicle')">Loaded</div>
-        <div class="qr" onclick="dWA('Dispatched — left for delivery')">Dispatched</div>
-        <div class="qr" onclick="dWA('Reached — at client location')">Reached</div>
-        <div class="qr" onclick="dWA('Delivered — confirmed by client')">Delivered</div>
-        <div class="qr" onclick="dWA('Issue: ')">Issue</div>
-      </div>
-    </div>`;
-  return "";
-}
-
-// ── AFTER RENDER ─────────────────────────────────────────────
-function afterRender(idx) {
-  if (role==="supervisor" && idx===1) svFill();
-  if (role==="supervisor" && idx===3) renderWAChat();
-}
-
-// ── PARSE CHALLAN ─────────────────────────────────────────────
-let parseTimer = null;
-function scheduleParse() { clearTimeout(parseTimer); parseTimer = setTimeout(doParse, 350); }
-function doParse() {
-  const raw = (document.getElementById("paste-box")||{}).value||"";
-  if (!raw.trim()) { parsedItems=[]; document.getElementById("parsed-section").style.display="none"; return; }
-  const lines = raw.split("\n").filter(l=>l.trim());
-  parsedItems = [];
-  lines.forEach(line => {
-    const cols = line.split(/\t|  {2,}/).map(c=>c.trim()).filter(Boolean);
-    if (!cols.length) return;
-    const desc = cols[0];
-    if (!desc || /^(item|description|particulars|s\.?no|sr)/i.test(desc)) return;
-    const qty  = cols[1]||"1";
-    const unit = cols[2]||"pcs";
-    parsedItems.push({ desc, qty, unit });
-  });
-  renderParsed();
-  document.getElementById("parsed-section").style.display = parsedItems.length?"block":"none";
-}
-function renderParsed() {
-  const el = document.getElementById("parsed-body");
-  if (!el) return;
-  el.innerHTML = parsedItems.map((it,i)=>`<tr>
-    <td><input value="${it.desc}" onchange="parsedItems[${i}].desc=this.value"></td>
-    <td><input value="${it.qty}" style="width:60px" onchange="parsedItems[${i}].qty=this.value"></td>
-    <td><input value="${it.unit}" style="width:50px" onchange="parsedItems[${i}].unit=this.value"></td>
-    <td><button class="rm-btn" onclick="parsedItems.splice(${i},1);renderParsed()">×</button></td>
-  </tr>`).join("");
-}
-function addBlankRow() { parsedItems.push({desc:"",qty:"1",unit:"pcs"}); renderParsed(); }
-
-async function submitChallan() {
-  const client = (document.getElementById("s-client")||{}).value||"";
-  if (!client.trim()) { alert("Please enter client name"); return; }
-  if (!parsedItems.length) { alert("Please paste and parse challan items first"); return; }
-  const ch = {
-    id:      document.getElementById("s-chno").value||"CH-NEW",
-    client,
-    addr:    document.getElementById("s-addr").value,
-    phone:   document.getElementById("s-phone").value,
-    contact: document.getElementById("s-contact").value,
-    items:   [...parsedItems],
-    notes:   document.getElementById("s-notes").value,
-    date:    today(),
-    by:      userName,
-  };
-  try {
-    const r = await api("/api/challan", ch);
-    if (r.ok) {
-      data.challans.unshift(r.challan);
-      parsedItems = [];
-      document.getElementById("paste-box").value = "";
-      document.getElementById("parsed-section").style.display = "none";
-      showToast("s-toast", `Challan ${ch.id} submitted!`);
-    }
-  } catch(e) {
-    // offline — add locally
-    data.challans.unshift({...ch, status:"pending", createdAt:new Date().toISOString()});
-    showToast("s-toast", `Challan ${ch.id} saved (offline)`);
-  }
-}
-
-async function sUpdateDelivery() {
-  const id     = (document.getElementById("s-dord")||{}).value;
-  const status = (document.getElementById("s-dstat")||{}).value;
-  const note   = (document.getElementById("s-dnote")||{}).value;
-  try { await api("/api/delivery/status", {id, status, note}); } catch {}
-  const d = data.deliveries.find(x=>x.id===id);
-  if (d) d.status = status;
-  showToast("s-dt","Status updated!");
-}
-async function sNotifyClient() {
-  await sUpdateDelivery();
-  const id = (document.getElementById("s-dord")||{}).value;
-  const st = (document.getElementById("s-dstat")||{}).value;
-  const d  = data.deliveries.find(x=>x.id===id);
-  const ch = data.challans.find(c=>c.id===(d&&d.challan));
-  const msgs = { loading:"Your order is being loaded.", dispatched:"Your order has been dispatched.", "in-transit":"Your goods are in transit.", reached:"Goods have reached delivery point.", delivered:"Your order has been delivered. Thank you!" };
-  const msg = `*Delivery Update*\n\nDear ${ch?ch.contact:"Customer"},\n\n${msgs[st]||"Status updated."}\n\nChallan: ${id}\n\n— Logistics Team`;
-  const phone = (ch?ch.phone:"").replace(/\D/g,"");
-  if (phone) openWA(phone, msg);
-}
-
-function svFill() {
-  const id = (document.getElementById("sv-ch")||{}).value;
-  const ch = data.challans.find(c=>c.id===id);
-  const el = document.getElementById("sv-ch-detail");
-  if (ch && el) {
-    el.innerHTML = `<strong>Client:</strong> ${ch.client}<br><strong>Address:</strong> ${ch.addr}<br><strong>Contact:</strong> ${ch.contact} — ${ch.phone}<br><strong>Items:</strong><br>${(ch.items||[]).map(i=>`&nbsp;&nbsp;• ${i.desc} — ${i.qty} ${i.unit}`).join("<br>")}${ch.notes?`<br><strong>Notes:</strong> ${ch.notes}`:""}`;
-  }
-}
-
-function quickAssign(cid) {
-  document.querySelectorAll(".tab")[1].click();
-  setTimeout(() => { const el=document.getElementById("sv-ch"); if(el){el.value=cid;svFill();} },100);
-}
-
-function svPreview() {
-  const cid  = (document.getElementById("sv-ch")||{}).value;
-  const tid  = parseInt((document.getElementById("sv-team")||{}).value);
-  const ch   = data.challans.find(c=>c.id===cid)||{items:[]};
-  const t    = TEAMS.find(x=>x.id===tid)||TEAMS[0];
-  const type = (document.getElementById("sv-wtype")||{}).value;
-  const date = (document.getElementById("sv-date")||{}).value;
-  const time = (document.getElementById("sv-stime")||{}).value;
-  const dur  = (document.getElementById("sv-dur")||{}).value;
-  const notes= (document.getElementById("sv-notes")||{}).value;
-  const items= (ch.items||[]).map(i=>`• ${i.desc} — ${i.qty} ${i.unit}`).join("\n");
-  const msg  = `*New Job — ${type}*\n\nHello ${t.lead},\n\nChallan: *${cid}*\nClient: ${ch.client||""}\nLocation: ${ch.addr||""}\nContact: ${ch.contact||""} (${ch.phone||""})\nWork: ${type}\nDate: ${date} at ${time}\nDuration: ${dur}\n\nItems:\n${items}${notes?"\n\nInstructions:\n"+notes:""}\n\nReply "% done" to update progress.\n— ${userName}`;
-  const prev = document.getElementById("sv-wa-preview");
-  if (prev) {
-    prev.style.display = "block";
-    prev.innerHTML = `<p style="font-size:11px;color:#888;margin-bottom:6px">Message to: ${t.name} — ${t.lead} (${t.phone})</p>
-    <div style="background:#e5ddd5;border-radius:12px;padding:12px">
-      <div style="background:#dcf8c6;border-radius:8px 0 8px 8px;padding:9px 12px;font-size:12px;line-height:1.6;color:#111;max-width:90%">${msg.replace(/\*(.*?)\*/g,"<strong>$1</strong>").replace(/\n/g,"<br>")}</div>
-    </div>`;
-  }
-  return { t, ch, msg };
-}
-
-async function svAssign() {
-  const { t, ch, msg } = svPreview();
-  const cid  = (document.getElementById("sv-ch")||{}).value;
-  const type = (document.getElementById("sv-wtype")||{}).value;
-  const date = (document.getElementById("sv-date")||{}).value;
-  const time = (document.getElementById("sv-stime")||{}).value;
-  const dur  = (document.getElementById("sv-dur")||{}).value;
-  const notes= (document.getElementById("sv-notes")||{}).value;
-  const job  = { challan:cid, team:t.name, lead:t.lead, phone:t.phone, type, date, time, dur, notes, by:userName };
-  try {
-    const r = await api("/api/assign", job);
-    if (r.ok) { data.jobs.unshift(r.job); const c=data.challans.find(x=>x.id===cid); if(c) c.status="assigned"; }
-  } catch(e) {
-    data.jobs.unshift({...job, id:"JB-"+(data.jobs.length+1).toString().padStart(3,"0"), pct:0, issue:"none", status:"assigned"});
-  }
-  openWA(t.phone, msg);
-  showToast("sv-toast","Assigned! WhatsApp sent.");
-}
-
-function svLoadPct() {
-  const id = (document.getElementById("sv-pjob")||{}).value;
-  const j  = data.jobs.find(x=>x.id===id);
-  if (j) {
-    const sl = document.getElementById("sv-pct");
-    if (sl) { sl.value=j.pct||0; document.getElementById("sv-pct-v").textContent=(j.pct||0)+"%"; }
-    const is = document.getElementById("sv-issue");
-    if (is) is.value = j.issue||"none";
-    const isn = document.getElementById("sv-issue-note");
-    if (isn) isn.value = j.issueNote||"";
-    const un = document.getElementById("sv-upd-note");
-    if (un) un.value = j.lastNote||"";
-  }
-}
-
-async function svSaveProgress() {
-  const id  = (document.getElementById("sv-pjob")||{}).value;
-  const pct = parseInt((document.getElementById("sv-pct")||{}).value||0);
-  const issue = (document.getElementById("sv-issue")||{}).value;
-  const issueNote = (document.getElementById("sv-issue-note")||{}).value;
-  const lastNote  = (document.getElementById("sv-upd-note")||{}).value;
-  const j = data.jobs.find(x=>x.id===id);
-  if (j) { j.pct=pct; j.issue=issue; j.issueNote=issueNote; j.lastNote=lastNote; if(pct>=100)j.status="done"; }
-  try { await api("/api/progress",{id,pct,issue,issueNote,lastNote}); } catch {}
-  showToast("sv-prog-toast","Progress saved!");
-}
-
-async function svNotifyOwner() {
-  await svSaveProgress();
-  const id  = (document.getElementById("sv-pjob")||{}).value;
-  const pct = (document.getElementById("sv-pct")||{}).value;
-  const issue = (document.getElementById("sv-issue")||{}).value;
-  const j  = data.jobs.find(x=>x.id===id);
-  const ch = data.challans.find(c=>c.id===(j&&j.challan));
-  const msg = `*Job Progress*\n\nJob: ${id}\nClient: ${ch?ch.client:""}\nTeam: ${j?j.team:""}\nProgress: *${pct}%*${issue!=="none"?"\nIssue: "+issue:""}\n\n— ${userName}`;
-  openWA("", msg); // owner phone from Twilio — fallback to general WA
-}
-
-// WA CHAT
-function renderWAChat() {
-  const id = (document.getElementById("wa-job")||{}).value;
-  const j  = data.jobs.find(x=>x.id===id);
-  const hdr = document.getElementById("wa-chat-hdr");
-  if (j && hdr) hdr.textContent = `${j.team} — ${j.lead} (${j.phone})`;
-  if (!waChats[id]) waChats[id]=[{dir:"out",msg:`Job assigned. Reply with % done or "issue: [description]".`,t:"09:00"}];
-  const msgs = document.getElementById("wa-msgs");
-  if (msgs) {
-    msgs.innerHTML = (waChats[id]||[]).map(m=>`<div><div class="${m.dir==="out"?"wa-out":"wa-in"}">${m.msg}</div><div class="wa-time">${m.t}</div></div>`).join("");
-    msgs.scrollTop = msgs.scrollHeight;
-  }
-}
-
-function waFill() {
-  const v = (document.getElementById("wa-quick")||{}).value;
-  const id = (document.getElementById("wa-job")||{}).value;
-  const j  = data.jobs.find(x=>x.id===id);
-  const tpls = {
-    start:  `Work has started. Please update us every 2 hours with % done.`,
-    pct:    `Hi ${j?j.lead:"Team"}, please share current % of work done and any issues.`,
-    issue:  `Please describe the issue. We will arrange support immediately.`,
-    done:   `Work 100% complete? Please send finalization photos and confirm.`,
-  };
-  const inp = document.getElementById("wa-inp");
-  if (inp && tpls[v]) inp.value = tpls[v];
-}
-
-function waSend() {
-  const inp = document.getElementById("wa-inp");
-  const msg = (inp||{}).value||"";
-  if (!msg.trim()) return;
-  const id  = (document.getElementById("wa-job")||{}).value;
-  const j   = data.jobs.find(x=>x.id===id);
-  if (!waChats[id]) waChats[id]=[];
-  waChats[id].push({dir:"out",msg,t:tnow()});
-  if (inp) inp.value="";
-  if (j) openWA(j.phone, msg);
-  renderWAChat();
-}
-
-function karigarReply(msg) {
-  const id = (document.getElementById("wa-job")||{}).value;
-  if (!waChats[id]) waChats[id]=[];
-  waChats[id].push({dir:"in",msg,t:tnow()});
-  const pctM = msg.match(/(\d+)%/);
-  if (pctM) { const j=data.jobs.find(x=>x.id===id); if(j){j.pct=parseInt(pctM[1]);if(j.pct>=100)j.status="done";} }
-  renderWAChat();
-}
-
-function handleFinPhotos(e) {
-  const photos = document.getElementById("fin-photos");
-  Array.from(e.target.files).forEach(f => {
-    const url = URL.createObjectURL(f);
-    const div = document.createElement("div");
-    div.style.cssText="width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5";
-    div.innerHTML=`<img src="${url}" style="width:100%;height:100%;object-fit:cover">`;
-    photos.appendChild(div);
-  });
-}
-
-function finalize() {
-  const id      = (document.getElementById("fin-job")||{}).value;
-  const remarks = (document.getElementById("fin-remarks")||{}).value;
-  const j = data.jobs.find(x=>x.id===id);
-  if (j) { j.status="done"; j.pct=100; }
-  showToast("fin-toast","Job finalized!");
-}
-
-function finalizeAndNotify() {
-  finalize();
-  const id = (document.getElementById("fin-job")||{}).value;
-  const j  = data.jobs.find(x=>x.id===id);
-  const ch = data.challans.find(c=>c.id===(j&&j.challan));
-  const msg= `*Job Finalized ✅*\n\nJob: ${id}\nTeam: ${j?j.team:""}\nChallan: ${j?j.challan:""}\nClient: ${ch?ch.client:""}\n\nWork 100% complete.\n\n— ${userName}`;
-  openWA("", msg);
-}
-
-function dConfirmStatus(delivId, status, label) {
-  openModal(`Mark as "${label}"?`, `This will update the delivery status and notify the supervisor.`, async () => {
-    try { await api("/api/delivery/status", {id:delivId, status}); } catch {}
-    const d = data.deliveries.find(x=>x.id===delivId);
-    if (d) d.status = status;
-    const msg = `*Delivery Update*\nOrder: ${delivId}\nStatus: *${label}*\nTime: ${tnow()}\n— ${userName}`;
-    const sv  = data.deliveries.find(x=>x.id===delivId);
-    openWA(sv?sv.phone:"", msg);
-    renderTab(0);
-  });
-}
-
-function dWA(msg) {
-  const d = (data.deliveries||[])[0];
-  openWA(d?d.phone:"", msg);
-}
-
-// ── TEAM MANAGEMENT ──────────────────────────────────────────
-function tmListHTML(withActions=true) {
-  const q = "";
-  if (!TEAMS.length) return `<div style="text-align:center;padding:2rem;color:#888;font-size:13px">No teams yet. Add your first team above.</div>`;
-  return TEAMS.map((t,i) => {
-    const c = tmColor(i);
-    return `<div class="team-row-item">
-      <div class="av" style="background:${c.bg};color:${c.color};width:36px;height:36px;font-size:12px;font-weight:600;flex-shrink:0">${tmInitials(t.name)}</div>
-      <div class="tm-info">
-        <div class="tm-name">${t.name} <span style="font-weight:400;color:#888;font-size:12px">· ${t.lead}</span></div>
-        <div class="tm-sub">${t.spec} · ${t.members} member(s) · ${t.phone}</div>
-        <div class="tm-avail">
-          <div class="tm-dot" style="background:${tmDotColor(t.status)}"></div>
-          <span>${t.from}–${t.until}${t.notes?" · "+t.notes:""}</span>
-        </div>
-      </div>
-      ${tmStatusBadge(t.status)}
-      ${withActions ? `<div class="tm-actions">
-        <button class="btn-edit-sm" onclick="tmStartEdit(${t.id})">Edit</button>
-        <button class="btn-del-sm"  onclick="tmAskDelete(${t.id})">Delete</button>
-      </div>`:""}
     </div>`;
   }).join("");
 }
 
-function teamStatsHTML() {
-  const onsite  = TEAMS.filter(t=>t.status==="on-site").length;
-  const avail   = TEAMS.filter(t=>t.status==="available").length;
-  const members = TEAMS.reduce((a,t)=>a+(parseInt(t.members)||0),0);
-  return `<div class="tm-stat-grid">
-    <div class="tm-stat"><div class="tm-stat-v">${TEAMS.length}</div><div class="tm-stat-l">Total teams</div></div>
-    <div class="tm-stat"><div class="tm-stat-v">${onsite}</div><div class="tm-stat-l">On site</div></div>
-    <div class="tm-stat"><div class="tm-stat-v">${avail}</div><div class="tm-stat-l">Available</div></div>
-    <div class="tm-stat"><div class="tm-stat-v">${members}</div><div class="tm-stat-l">Total members</div></div>
-  </div>`;
+async function addSite(){
+  const name=document.getElementById("sf-name").value.trim();
+  const addr=document.getElementById("sf-addr").value.trim();
+  const work=document.getElementById("sf-work").value.trim();
+  if(!name||!addr||!work){alert("Please fill site name, address and work");return;}
+  const body={name,addr,work,type:document.getElementById("sf-type").value,date:document.getElementById("sf-date").value||today(),end:document.getElementById("sf-end").value,addedBy:me?me.name:"Staff"};
+  const r=await callAPI("/api/site/add",body);
+  if(r&&r.ok)D.sites.push(r.site);
+  else D.sites.push({id:Date.now(),...body,karigar:[],pct:0,issue:"none",note:"",status:"pending",photos:[]});
+  ["sf-name","sf-addr","sf-work"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("sf-end").value="";
+  togForm("st"); renderSites();
 }
 
-function teamManagementHTML() {
-  const isEditing = teamEditId !== null;
-  const et = isEditing ? TEAMS.find(t=>t.id===teamEditId) : null;
-  return `
-    ${teamStatsHTML()}
-    <div class="card team-form-wrap ${isEditing?"editing":""}" id="tm-form-card">
-      <div class="card-title" style="font-size:14px;font-weight:600;color:#111;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
-        <span>${isEditing?`Editing: ${et?et.name:"Team"}`:"Add new team"}</span>
-        ${isEditing?`<button class="btn" style="font-size:12px;padding:4px 12px" onclick="tmCancelEdit()">Cancel</button>`:""}
+async function delSite(id){
+  if(!confirm("Delete this site?"))return;
+  const s=D.sites.find(x=>x.id===id);
+  if(s)s.karigar.forEach(kid=>{const k=D.karigars.find(x=>x.id===kid);if(k){k.free=true;k.siteId=null;}});
+  D.sites=D.sites.filter(x=>x.id!==id);
+  await callAPI("/api/site/delete",{id});
+  renderSites();renderKarigars();renderPending();
+}
+
+function siteWA(id){
+  const s=D.sites.find(x=>x.id===id);
+  const ks=D.karigars.filter(k=>s&&s.karigar.includes(k.id));
+  const msg=`*Site Update — ${s.name}*\n\nAddress: ${s.addr}\nWork: ${s.work}\nProgress: ${s.pct}%${s.issue!=="none"?"\n⚠ Issue: "+s.issue:""}\n${s.note?"Note: "+s.note:""}`;
+  const phone=ks.length?ks[0].phone:"";
+  window.open("https://wa.me/"+phone.replace(/\D/g,"")+"?text="+encodeURIComponent(msg),"_blank");
+}
+
+function removeKFromSite(siteId,kId){
+  if(!confirm("Remove this karigar?"))return;
+  const s=D.sites.find(x=>x.id===siteId);
+  const k=D.karigars.find(x=>x.id===kId);
+  if(s)s.karigar=s.karigar.filter(id=>id!==kId);
+  if(k){k.free=true;k.siteId=null;}
+  callAPI("/api/assign",{siteId,karigarIds:s?s.karigar:[],by:me?me.name:""});
+  renderSites();renderKarigars();renderPending();
+}
+
+// ── ASSIGN ───────────────────────────────────────────────────
+function openAssign(siteId){
+  curSite=siteId;
+  const s=D.sites.find(x=>x.id===siteId);
+  document.getElementById("assign-sub").textContent=s?s.name+" — "+s.work:"";
+  selKs=[...(s?s.karigar:[])];
+  const avail=D.karigars.filter(k=>k.free||(s&&s.karigar.includes(k.id)));
+  const el=document.getElementById("assign-list");
+  if(!avail.length){el.innerHTML=`<div class="empty">No karigar available. Add karigar first.</div>`;document.getElementById("assign-ov").classList.add("on");return;}
+  el.innerHTML=avail.map(k=>{
+    const c=col(D.karigars.indexOf(k)),sel=selKs.includes(k.id);
+    return `<div class="sh-k-row ${sel?"sel":""}" id="ar-${k.id}" onclick="togSel(${k.id})">
+      <div class="sh-check ${sel?"on":""}" id="ac-${k.id}">${sel?"✓":""}</div>
+      <div class="k-av-big" style="background:${c.bg};color:${c.c};width:36px;height:36px;font-size:12px">${ini(k.name)}</div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:600">${k.name}</div><div style="font-size:11px;color:#888">${k.skill} · ${k.size} person(s) · ${sel?"Assigned":"Free"}</div></div>
+    </div>`;
+  }).join("");
+  document.getElementById("assign-ov").classList.add("on");
+}
+
+function togSel(kid){
+  const row=document.getElementById("ar-"+kid),chk=document.getElementById("ac-"+kid);
+  if(selKs.includes(kid)){selKs=selKs.filter(x=>x!==kid);row.classList.remove("sel");chk.classList.remove("on");chk.textContent="";}
+  else{selKs.push(kid);row.classList.add("sel");chk.classList.add("on");chk.textContent="✓";}
+}
+
+async function doAssign(){
+  const s=D.sites.find(x=>x.id===curSite);if(!s){closeOv("assign-ov");return;}
+  const prev=[...s.karigar];
+  prev.forEach(kid=>{if(!selKs.includes(kid)){const k=D.karigars.find(x=>x.id===kid);if(k){k.free=true;k.siteId=null;}}});
+  selKs.forEach(kid=>{const k=D.karigars.find(x=>x.id===kid);if(k){k.free=false;k.siteId=curSite;}});
+  s.karigar=selKs;
+  if(s.karigar.length)s.status="assigned";
+  await callAPI("/api/assign",{siteId:curSite,karigarIds:selKs,by:me?me.name:""});
+  closeOv("assign-ov");
+  renderSites();renderKarigars();renderPending();
+}
+
+// ── STATUS ───────────────────────────────────────────────────
+function openStatus(id){
+  curSite=id;curIssue="none";
+  const s=D.sites.find(x=>x.id===id);
+  document.getElementById("st-sh-title").textContent=s?s.name:"Update";
+  document.getElementById("st-sh-sub").textContent=s?s.work:"";
+  document.getElementById("pct-slider").value=s?s.pct:0;
+  document.getElementById("pct-lbl").textContent=(s?s.pct:0)+"%";
+  document.getElementById("st-note").value=s?s.note:"";
+  curIssue=s?s.issue:"none";
+  document.querySelectorAll(".issue-opt").forEach(o=>{o.classList.toggle("on",(o.textContent==="No issue"&&curIssue==="none")||(o.textContent.toLowerCase().replace(/\s/g,"")===curIssue));});
+  document.getElementById("status-ov").classList.add("on");
+}
+function pickIssue(v,el){curIssue=v;document.querySelectorAll(".issue-opt").forEach(o=>o.classList.remove("on"));el.classList.add("on");}
+async function saveStatus(){
+  const s=D.sites.find(x=>x.id===curSite);if(!s)return;
+  s.pct=parseInt(document.getElementById("pct-slider").value);
+  s.issue=curIssue;s.note=document.getElementById("st-note").value;
+  if(s.pct>=100)s.status="done";
+  await callAPI("/api/status",{id:curSite,pct:s.pct,issue:s.issue,note:s.note,by:me?me.name:""});
+  closeOv("status-ov");renderSites();renderPending();
+}
+
+// ── KARIGARS ────────────────────────────────────────────────
+function renderKarigars(){
+  const free=D.karigars.filter(k=>k.free).length;
+  document.getElementById("k-pills").innerHTML=[
+    {v:D.karigars.length,l:"Total",cls:""},
+    {v:free,l:"Free now",cls:"pill-green"},
+    {v:D.karigars.filter(k=>!k.free).length,l:"On site",cls:"pill-amber"},
+  ].map(p=>`<div class="pill ${p.cls}"><div class="pill-v">${p.v}</div><div class="pill-l">${p.l}</div></div>`).join("");
+  const fb=document.getElementById("free-banner");
+  document.getElementById("free-txt").textContent=free+" karigar";
+  fb.style.display=free>0?"flex":"none";
+  let list=kFilter==="free"?D.karigars.filter(k=>k.free):kFilter==="working"?D.karigars.filter(k=>!k.free):D.karigars;
+  const el=document.getElementById("karigar-list");
+  if(!list.length){el.innerHTML=`<div class="empty">No karigar found.</div>`;return;}
+  el.innerHTML=list.map(k=>{
+    const c=col(D.karigars.indexOf(k)),site=D.sites.find(s=>s.id===k.siteId);
+    return `<div class="k-card">
+      <div class="k-av-big" style="background:${c.bg};color:${c.c}">${ini(k.name)}</div>
+      <div class="k-info">
+        <div class="k-name">${k.name}</div>
+        <div class="k-sub">${k.skill} · ${k.size} person(s) · ${k.phone}</div>
+        <div class="${k.free?"k-free-st":"k-busy-st"} k-st">${k.free?"✓ Free — ready to start":"📍 "+(site?site.name:"On site")}</div>
       </div>
-      <div class="fg">
-        <div><label>Team name</label><input id="tm-name" placeholder="e.g. Team Alpha" value="${et?et.name:""}"></div>
-        <div><label>Lead / karigar name</label><input id="tm-lead" placeholder="Person in charge" value="${et?et.lead:""}"></div>
-        <div><label>WhatsApp number</label><input id="tm-phone" placeholder="+91 XXXXX XXXXX" value="${et?et.phone:""}"></div>
-        <div><label>No. of members</label><input id="tm-members" type="number" min="1" value="${et?et.members:2}"></div>
-        <div><label>Specialization</label><select id="tm-spec">
-          ${["Electrical","Plumbing","Civil","Fabrication","Carpentry","Painting","General","Multi-skill"].map(s=>`<option${et&&et.spec===s?" selected":""}>${s}</option>`).join("")}
-        </select></div>
-        <div><label>Status</label><select id="tm-status">
-          ${[["available","Available"],["on-site","On site"],["in-transit","In transit"],["off","Off duty"]].map(([v,l])=>`<option value="${v}"${et&&et.status===v?" selected":""}>${l}</option>`).join("")}
-        </select></div>
-        <div><label>Available from</label><input id="tm-from" type="time" value="${et?et.from:"09:00"}"></div>
-        <div><label>Available until</label><input id="tm-until" type="time" value="${et?et.until:"18:00"}"></div>
-        <div class="fc"><label>Notes (optional)</label><input id="tm-notes" placeholder="Any notes" value="${et?et.notes:""}"></div>
-      </div>
-      <div class="btn-row">
-        <button class="btn ${isEditing?"btn-primary":"btn-green"}" onclick="tmSave()">${isEditing?"Save changes":"Add team"}</button>
-        ${isEditing?`<button class="btn" onclick="tmCancelEdit()">Cancel</button>`:""}
-      </div>
-      <div class="toast toast-ok" id="tm-toast"></div>
-    </div>
-    <div class="card">
-      <div class="card-title" style="font-size:14px;font-weight:600;color:#111;margin-bottom:10px">
-        All teams (${TEAMS.length})
-      </div>
-      <input class="search-inp" id="tm-search" placeholder="Search by name, lead, specialization…" oninput="tmFilterRender()">
-      <div id="tm-list">${tmListHTML(true)}</div>
-    </div>
-    <div class="modal-bg" id="tm-del-modal">
-      <div class="modal">
-        <div class="modal-title">Delete team?</div>
-        <div class="modal-sub" id="tm-del-sub"></div>
-        <div class="modal-btns">
-          <button class="modal-cancel" onclick="tmCloseModal()">Cancel</button>
-          <button class="modal-ok" onclick="tmConfirmDelete()">Delete</button>
-        </div>
+      <div class="k-right">
+        <span class="badge ${k.free?"b-green":"b-blue"}">${k.free?"Free":"On site"}</span>
+        ${k.free?`<button class="k-btn k-btn-a" onclick="openKSite(${k.id})">Assign</button>`:`<button class="k-btn k-btn-r" onclick="releaseK(${k.id})">Release</button>`}
+        <button class="k-btn k-btn-d" onclick="delKarigar(${k.id})">Delete</button>
       </div>
     </div>`;
+  }).join("");
 }
 
-function tmSave() {
-  const name    = (document.getElementById("tm-name")||{}).value||"";
-  const lead    = (document.getElementById("tm-lead")||{}).value||"";
-  const phone   = (document.getElementById("tm-phone")||{}).value||"";
-  const members = (document.getElementById("tm-members")||{}).value||"1";
-  const spec    = (document.getElementById("tm-spec")||{}).value||"General";
-  const status  = (document.getElementById("tm-status")||{}).value||"available";
-  const from    = (document.getElementById("tm-from")||{}).value||"09:00";
-  const until   = (document.getElementById("tm-until")||{}).value||"18:00";
-  const notes   = (document.getElementById("tm-notes")||{}).value||"";
-  if (!name.trim()) { alert("Please enter team name"); return; }
-  if (!lead.trim()) { alert("Please enter lead name"); return; }
-  if (!phone.trim()){ alert("Please enter WhatsApp number"); return; }
-  if (teamEditId !== null) {
-    const t = TEAMS.find(x=>x.id===teamEditId);
-    if (t) Object.assign(t,{name,lead,phone,members,spec,status,from,until,notes});
-    teamEditId = null;
-  } else {
-    TEAMS.push({id:teamNextId++,name,lead,phone,members,spec,status,from,until,notes});
+function kChip(f,el){kFilter=f;document.querySelectorAll(".chip-row .chip").forEach(c=>c.classList.remove("on"));el.classList.add("on");renderKarigars();}
+
+async function addKarigar(){
+  const name=document.getElementById("kf-name").value.trim();
+  const phone=document.getElementById("kf-phone").value.trim();
+  if(!name||!phone){alert("Enter name and WhatsApp number");return;}
+  const body={name,skill:document.getElementById("kf-skill").value,phone,size:parseInt(document.getElementById("kf-size").value)||1};
+  const r=await callAPI("/api/karigar/add",body);
+  if(r&&r.ok)D.karigars.push(r.karigar);
+  else D.karigars.push({id:Date.now(),...body,free:true,siteId:null,photos:[]});
+  document.getElementById("kf-name").value="";document.getElementById("kf-phone").value="";
+  togForm("kf");renderKarigars();
+}
+
+async function delKarigar(id){
+  if(!confirm("Delete this karigar?"))return;
+  const k=D.karigars.find(x=>x.id===id);
+  if(k&&k.siteId){const s=D.sites.find(x=>x.id===k.siteId);if(s)s.karigar=s.karigar.filter(x=>x!==id);}
+  D.karigars=D.karigars.filter(x=>x.id!==id);
+  await callAPI("/api/karigar/delete",{id});
+  renderKarigars();renderSites();renderPending();
+}
+
+function releaseK(id){
+  const k=D.karigars.find(x=>x.id===id);if(!k)return;
+  const s=D.sites.find(x=>x.id===k.siteId);
+  if(s){s.karigar=s.karigar.filter(x=>x!==id);callAPI("/api/assign",{siteId:s.id,karigarIds:s.karigar,by:me?me.name:""});}
+  k.free=true;k.siteId=null;
+  renderKarigars();renderSites();renderPending();
+}
+
+function openKSite(kid){
+  curK=kid;
+  const k=D.karigars.find(x=>x.id===kid);
+  document.getElementById("ksite-sub").textContent=k?k.name+" ("+k.skill+")":"";
+  const pending=D.sites.filter(s=>s.pct<100);
+  const el=document.getElementById("ksite-list");
+  if(!pending.length){el.innerHTML=`<div class="empty">No active sites.</div>`;}
+  else el.innerHTML=pending.map(s=>`<div class="sh-k-row" onclick="assignKToSite(${kid},${s.id})" style="flex-direction:column;align-items:flex-start;gap:6px">
+    <div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px">
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700">${s.name}</div><div style="font-size:11px;color:#888;margin-top:1px">${s.addr}</div><div style="font-size:12px;color:#444;margin-top:3px">${s.work}</div></div>
+      <span class="badge ${s.karigar.length?"b-blue":"b-red"}">${s.karigar.length?"Active":"No karigar"}</span>
+    </div>
+    <div style="width:100%;height:5px;background:#f3f4f6;border-radius:3px;overflow:hidden"><div style="height:100%;border-radius:3px;background:${pCol(s.pct)};width:${s.pct}%"></div></div>
+  </div>`).join("");
+  document.getElementById("ksite-ov").classList.add("on");
+}
+
+async function assignKToSite(kid,siteId){
+  const k=D.karigars.find(x=>x.id===kid),s=D.sites.find(x=>x.id===siteId);
+  if(k&&s){k.free=false;k.siteId=siteId;if(!s.karigar.includes(kid))s.karigar.push(kid);s.status="assigned";}
+  await callAPI("/api/assign",{siteId,karigarIds:s?s.karigar:[],by:me?me.name:""});
+  closeOv("ksite-ov");renderKarigars();renderSites();renderPending();
+}
+
+// ── PENDING ──────────────────────────────────────────────────
+function renderPending(){
+  const noK=D.sites.filter(s=>!s.karigar.length&&s.pct<100);
+  const free=D.karigars.filter(k=>k.free);
+  document.getElementById("pend-pills").innerHTML=[
+    {v:noK.length,l:"Sites need karigar",cls:"pill-red"},
+    {v:free.length,l:"Karigar free",cls:"pill-green"},
+  ].map(p=>`<div class="pill ${p.cls}"><div class="pill-v">${p.v}</div><div class="pill-l">${p.l}</div></div>`).join("");
+  let html="";
+  if(noK.length){
+    html+=`<div class="pend-hdr">Sites without karigar <span class="pend-count">${noK.length}</span></div>`;
+    html+=noK.map(s=>`<div class="pend-card"><div class="pend-name">${s.name}</div><div class="pend-sub">${s.addr}${s.end?" · Due "+fmtD(s.end):""}</div><div class="pend-work">📋 ${s.work}</div><button class="pend-btn" onclick="openAssign(${s.id});goPage('sites',document.querySelector('.nav-btn'))">Assign karigar →</button></div>`).join("");
   }
-  renderTab(3);
-  setTimeout(()=>{const el=document.getElementById("tm-toast");if(el){el.textContent="Team saved!";el.style.display="block";setTimeout(()=>el.style.display="none",2500);}},50);
+  if(free.length){
+    html+=`<div class="pend-hdr" style="margin-top:${noK.length?14:0}px">Karigar free — can start now <span class="pend-count">${free.length}</span></div>`;
+    html+=free.map(k=>{const c=col(D.karigars.indexOf(k));return`<div class="k-card"><div class="k-av-big" style="background:${c.bg};color:${c.c}">${ini(k.name)}</div><div class="k-info"><div class="k-name">${k.name}</div><div class="k-sub">${k.skill} · ${k.size} person(s)</div><div class="k-free-st k-st">✓ Free now</div></div><div class="k-right"><button class="k-btn k-btn-a" onclick="openKSite(${k.id})">Assign →</button></div></div>`;}).join("");
+  }
+  if(!noK.length&&!free.length)html=`<div class="empty">All sites assigned and all karigar working. 🎉</div>`;
+  document.getElementById("pending-list").innerHTML=html;
 }
 
-function tmStartEdit(id) {
-  teamEditId = id;
-  renderTab(3);
-  setTimeout(()=>{ const el=document.getElementById("tm-form-card"); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); },50);
+// ── STAFF ────────────────────────────────────────────────────
+function renderStaff(){
+  document.getElementById("staff-pills").innerHTML=[
+    {v:D.staff.length,l:"Total staff",cls:""},
+    {v:D.staff.filter(s=>s.role==="owner").length,l:"Owner",cls:""},
+    {v:D.staff.filter(s=>s.role==="supervisor").length,l:"Supervisor",cls:""},
+    {v:D.staff.filter(s=>s.role==="staff").length,l:"Staff",cls:""},
+  ].map(p=>`<div class="pill ${p.cls}"><div class="pill-v">${p.v}</div><div class="pill-l">${p.l}</div></div>`).join("");
+  const el=document.getElementById("staff-list");
+  el.innerHTML=D.staff.map(s=>{
+    const isOwner=s.role==="owner";
+    const isMe=me&&me.id===s.id;
+    return `<div class="staff-card">
+      <div class="staff-av ${isOwner?"owner":""}">${ini(s.name)}</div>
+      <div class="staff-info">
+        <div class="staff-name">${s.name}${isMe?" (you)":""}</div>
+        <div class="staff-sub">${s.role.charAt(0).toUpperCase()+s.role.slice(1)}${s.addedAt?" · Added "+new Date(s.addedAt).toLocaleDateString("en-IN"):""}</div>
+      </div>
+      <div class="staff-right">
+        <span class="badge ${isOwner?"b-purple":s.role==="supervisor"?"b-blue":"b-gray"}">${s.role}</span>
+        ${!isOwner&&!isMe?`<button class="k-btn k-btn-d" onclick="delStaff(${s.id})">Remove</button>`:""}
+      </div>
+    </div>`;
+  }).join("")||`<div class="empty">No staff yet.</div>`;
 }
 
-function tmCancelEdit() {
-  teamEditId = null;
-  renderTab(3);
+async function addStaff(){
+  const name=document.getElementById("sff-name").value.trim();
+  const pin=String(document.getElementById("sff-pin").value).trim();
+  const role=document.getElementById("sff-role").value;
+  if(!name){alert("Enter staff name");return;}
+  if(!pin||pin.length!==4||isNaN(pin)){alert("PIN must be exactly 4 digits");return;}
+  const r=await callAPI("/api/staff/add",{name,pin,role});
+  if(r&&r.ok){D.staff.push({...r.staff,addedAt:new Date().toISOString()});togForm("sff");renderStaff();}
+  else alert(r&&r.error?r.error:"Could not add staff. PIN may already be in use.");
+  document.getElementById("sff-name").value="";document.getElementById("sff-pin").value="";
 }
 
-function tmAskDelete(id) {
-  teamDelId = id;
-  const t = TEAMS.find(x=>x.id===id);
-  const el = document.getElementById("tm-del-sub");
-  const modal = document.getElementById("tm-del-modal");
-  if (el) el.textContent = `Are you sure you want to delete "${t?t.name:"this team"}"? This cannot be undone.`;
-  if (modal) modal.classList.add("show");
+async function delStaff(id){
+  if(!confirm("Remove this staff member?"))return;
+  const r=await callAPI("/api/staff/delete",{id});
+  if(r&&r.ok){D.staff=D.staff.filter(s=>s.id!==id);renderStaff();}
+  else alert(r&&r.error?r.error:"Cannot remove.");
 }
 
-function tmConfirmDelete() {
-  TEAMS = TEAMS.filter(t=>t.id!==teamDelId);
-  teamDelId = null;
-  tmCloseModal();
-  renderTab(3);
+// ── LOG ──────────────────────────────────────────────────────
+function renderLog(){
+  const el=document.getElementById("log-list");
+  const dc={assign:"ld-g",progress:"ld-a",done:"ld-g",issue:"ld-r",info:"ld-d",photo:"ld-p"};
+  el.innerHTML=D.log.length?D.log.map(l=>`<div class="log-item"><span class="log-t">${l.t}</span><span class="log-dot ${dc[l.type]||"ld-d"}"></span><span>${l.txt}</span></div>`).join(""):`<div class="empty">No activity yet.</div>`;
 }
 
-function tmCloseModal() {
-  const modal = document.getElementById("tm-del-modal");
-  if (modal) modal.classList.remove("show");
-  teamDelId = null;
-}
+// ── LIGHTBOX ─────────────────────────────────────────────────
+function openLightbox(url){document.getElementById("lightbox-img").src=url;document.getElementById("lightbox").classList.add("on");}
+function closeLightbox(){document.getElementById("lightbox").classList.remove("on");}
 
-function tmFilterRender() {
-  const q = ((document.getElementById("tm-search")||{}).value||"").toLowerCase();
-  const el = document.getElementById("tm-list");
-  if (!el) return;
-  const filtered = TEAMS.filter(t =>
-    !q || t.name.toLowerCase().includes(q) || t.lead.toLowerCase().includes(q) ||
-    t.spec.toLowerCase().includes(q) || t.phone.includes(q)
-  );
-  el.innerHTML = filtered.length
-    ? filtered.map((t,i)=>{
-        const c=tmColor(TEAMS.indexOf(t));
-        return `<div class="team-row-item">
-          <div class="av" style="background:${c.bg};color:${c.color};width:36px;height:36px;font-size:12px;font-weight:600;flex-shrink:0">${tmInitials(t.name)}</div>
-          <div class="tm-info">
-            <div class="tm-name">${t.name} <span style="font-weight:400;color:#888;font-size:12px">· ${t.lead}</span></div>
-            <div class="tm-sub">${t.spec} · ${t.members} member(s) · ${t.phone}</div>
-            <div class="tm-avail"><div class="tm-dot" style="background:${tmDotColor(t.status)}"></div><span>${t.from}–${t.until}${t.notes?" · "+t.notes:""}</span></div>
-          </div>
-          ${tmStatusBadge(t.status)}
-          <div class="tm-actions">
-            <button class="btn-edit-sm" onclick="tmStartEdit(${t.id})">Edit</button>
-            <button class="btn-del-sm"  onclick="tmAskDelete(${t.id})">Delete</button>
-          </div>
-        </div>`;
-      }).join("")
-    : `<div style="text-align:center;padding:1.5rem;color:#888;font-size:13px">No teams match "${q}"</div>`;
-}
+function closeOv(id){document.getElementById(id).classList.remove("on");}
+
+// INIT + AUTO SYNC
+(async()=>{})();
+setInterval(async()=>{if(me){await syncData();const p=document.querySelector(".pg.on");if(p)render(p.id.replace("pg-",""));}},15000);
 </script>
 </body>
 </html>
