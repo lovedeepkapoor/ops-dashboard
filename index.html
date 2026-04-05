@@ -341,10 +341,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <!-- VOICE -->
     <div class="pg" id="pg-voice">
       <div class="mic-section">
-        <div style="font-size:13px;color:#888;margin-bottom:14px;font-weight:500">Tap mic · speak in Hindi, English or Hinglish</div>
-        <button class="mic-btn" id="mic-btn" onclick="toggleMic()">🎤</button>
-        <div class="mic-status" id="mic-status">Tap mic to start</div>
-        <div class="mic-hint" id="mic-hint">Say site name, address, work, karigar name, dates</div>
+        <div style="font-size:13px;color:#888;margin-bottom:6px;font-weight:500">Hold button · speak in Hindi, English or Hinglish</div>
+        <div style="font-size:11px;color:#aaa;margin-bottom:16px">Powered by OpenAI Whisper — understands Hindi perfectly</div>
+        <button class="mic-btn" id="mic-btn"
+          onmousedown="vStartRec()" ontouchstart="vStartRec(event)"
+          onmouseup="vStopRec()"   ontouchend="vStopRec(event)"
+          onmouseleave="vStopRec()">🎤</button>
+        <div class="mic-status" id="mic-status">Hold to record</div>
+        <div class="mic-hint" id="mic-hint">Hold the mic button and speak. Release when done.</div>
+        <div id="mic-timer" style="font-size:11px;color:#aaa;margin-top:4px;min-height:16px"></div>
         <div class="transcript-box" id="v-transcript"></div>
       </div>
       <div class="parsed-card" id="v-parsed-card">
@@ -356,23 +361,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         </div>
         <div class="confirm-btns">
           <button class="cbtn cbtn-cancel" onclick="vReset()">Cancel</button>
-          <button class="cbtn cbtn-retry" onclick="toggleMic()">Retry 🎤</button>
+          <button class="cbtn cbtn-retry" id="retry-btn">Hold to retry 🎤</button>
           <button class="cbtn cbtn-ok" onclick="vConfirm()">Add site & assign ↗</button>
         </div>
       </div>
       <div class="v-examples">
-        <div class="v-ex-title">What to say — tap to try</div>
+        <div class="v-ex-title">What to say</div>
         <div class="v-ex-lang">Hinglish</div>
-        <div class="v-ex-item" onclick="vSimulate('Gupta Residency ka kaam hai Sector 22 Chandigarh mein, electrical wiring karni hai teen floor ki, Ravi Kumar ko assign karo, aaj se start karo')"><strong>"Gupta Residency Sector 22 mein electrical wiring teen floor, Ravi Kumar ko assign karo"</strong></div>
-        <div class="v-ex-item" onclick="vSimulate('Patel Apartments Panchkula mein plumbing ka kaam hai, Suresh aur Ajay ko bhejo, 10 April tak khatam karna hai')"><strong>"Patel Apartments Panchkula, plumbing ka kaam, Suresh aur Ajay ko bhejo, 10 April tak"</strong></div>
-        <div class="v-ex-lang">English</div>
-        <div class="v-ex-item" onclick="vSimulate('Add new site Mehta Office Sector 34 civil work false ceiling and painting assign Mohan complete by 15 April')"><strong>"Mehta Office Sector 34, civil work, false ceiling and painting, assign Mohan, 15 April"</strong></div>
+        <div class="v-ex-item"><strong>"Gupta Residency Sector 22 mein electrical wiring teen floor, Ravi Kumar ko assign karo, 10 April tak"</strong></div>
+        <div class="v-ex-item"><strong>"Patel Apartments Panchkula, plumbing ka kaam, Suresh aur Ajay ko bhejo, 15 April tak khatam"</strong></div>
         <div class="v-ex-lang">Hindi</div>
-        <div class="v-ex-item" onclick="vSimulate('Sharma ke ghar mein bijli ka kaam hai Model Town mein, Deepak aur Ravi ko assign karo, kal se shuru karo')"><strong>"Sharma ke ghar mein bijli ka kaam Model Town mein, Deepak aur Ravi ko assign karo"</strong></div>
+        <div class="v-ex-item"><strong>"Sharma ke ghar mein bijli ka kaam hai Model Town mein, Deepak ko assign karo, kal se shuru"</strong></div>
+        <div class="v-ex-lang">English</div>
+        <div class="v-ex-item"><strong>"Mehta Office Sector 34, civil work, false ceiling and painting, assign Mohan, complete by 20 April"</strong></div>
       </div>
       <div class="v-wa-box">
-        <div class="v-wa-title">🎙 WhatsApp voice note (alternative)</div>
-        <div class="v-wa-sub">Staff can also send a WhatsApp voice note to your operations number. System transcribes it, adds the site, and assigns karigar automatically.</div>
+        <div class="v-wa-title">🎙 Also works via WhatsApp voice note</div>
+        <div class="v-wa-sub">Staff can send a voice note to your operations WhatsApp number. Whisper transcribes it and the site is added automatically.</div>
       </div>
       <div id="v-sites-section" style="display:none">
         <div style="font-size:14px;font-weight:700;color:#111;margin-bottom:10px">Added by voice</div>
@@ -864,7 +869,187 @@ function closeOv(id){document.getElementById(id).classList.remove("on");}
 (async()=>{})();
 setInterval(async()=>{if(me){await syncData();const p=document.querySelector(".pg.on");if(p)render(p.id.replace("pg-",""));}},15000);
 
-// ── VOICE MODULE ─────────────────────────────────────────────
+// ── VOICE MODULE — Whisper API ────────────────────────────────
+// Uses MediaRecorder to record audio, sends to server /api/transcribe
+// Server calls OpenAI Whisper, returns Hindi/Hinglish transcript
+const WORK_MAP={bijli:"Electrical",electric:"Electrical",wiring:"Electrical",mcb:"Electrical",paani:"Plumbing",plumbing:"Plumbing",pipe:"Plumbing",civil:"Civil",ceiling:"Civil","false ceiling":"Civil",construction:"Civil",carpentry:"Carpentry",wood:"Carpentry",furniture:"Carpentry",painting:"Painting",paint:"Painting",colour:"Painting",color:"Painting",fabrication:"Fabrication",welding:"Fabrication"};
+
+let vMediaRec=null, vAudioChunks=[], vRecording=false, vParsed=null, vSelK=[], vSites=[], vTimer=null, vSecs=0;
+
+async function vStartRec(e){
+  if(e)e.preventDefault();
+  if(vRecording)return;
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    vAudioChunks=[];
+    vMediaRec=new MediaRecorder(stream,{mimeType:MediaRecorder.isTypeSupported("audio/webm")?"audio/webm":"audio/mp4"});
+    vMediaRec.ondataavailable=ev=>{if(ev.data.size>0)vAudioChunks.push(ev.data);};
+    vMediaRec.onstop=async()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      await vSendToWhisper();
+    };
+    vMediaRec.start();
+    vRecording=true;
+    document.getElementById("mic-btn").classList.add("listening");
+    document.getElementById("mic-status").textContent="Recording... release when done";
+    document.getElementById("mic-hint").textContent="Speak clearly — site name, address, work, karigar, dates";
+    document.getElementById("v-transcript").classList.add("show");
+    document.getElementById("v-transcript").textContent="🔴 Recording...";
+    document.getElementById("v-parsed-card").classList.remove("show");
+    // timer
+    vSecs=0;
+    vTimer=setInterval(()=>{
+      vSecs++;
+      document.getElementById("mic-timer").textContent=vSecs+"s recorded";
+      if(vSecs>=60)vStopRec(); // auto stop at 60s
+    },1000);
+  }catch(err){
+    vToast("Microphone access denied. Please allow mic in browser settings.");
+  }
+}
+
+function vStopRec(e){
+  if(e)e.preventDefault();
+  if(!vRecording||!vMediaRec)return;
+  vRecording=false;
+  clearInterval(vTimer);
+  document.getElementById("mic-timer").textContent="";
+  document.getElementById("mic-btn").classList.remove("listening");
+  document.getElementById("mic-btn").classList.add("processing");
+  document.getElementById("mic-status").textContent="Sending to Whisper...";
+  vMediaRec.stop();
+}
+
+async function vSendToWhisper(){
+  const mimeType=vAudioChunks[0]?.type||"audio/webm";
+  const blob=new Blob(vAudioChunks,{type:mimeType});
+  const ext=mimeType.includes("mp4")?"mp4":"webm";
+  const kb=Math.round(blob.size/1024);
+  document.getElementById("v-transcript").textContent=`Sending ${kb}KB to Whisper...`;
+  try{
+    const fd=new FormData();
+    fd.append("audio",blob,"recording."+ext);
+    fd.append("by",me?me.name:"Staff");
+    // send karigar list so server can match names
+    fd.append("karigars",JSON.stringify(D.karigars.map(k=>({id:k.id,name:k.name,skill:k.skill}))));
+    const res=await fetch(API+"/api/transcribe",{method:"POST",body:fd});
+    const data=await res.json();
+    document.getElementById("mic-btn").classList.remove("processing");
+    if(data.ok&&data.text){
+      document.getElementById("v-transcript").textContent=data.text;
+      document.getElementById("mic-status").textContent="Got it! Check below";
+      // use server-parsed fields if available, else fallback
+      const parsed=data.parsed||vParse(data.text);
+      vParsed=parsed;
+      vShowParsed(parsed);
+    }else{
+      document.getElementById("mic-status").textContent="Could not understand. Try again.";
+      document.getElementById("v-transcript").textContent=data.error||"Transcription failed.";
+      vToast("Try again — speak more clearly");
+    }
+  }catch(err){
+    document.getElementById("mic-btn").classList.remove("processing");
+    document.getElementById("mic-status").textContent="Server error. Try again.";
+    vToast("Could not reach server. Check connection.");
+  }
+}
+
+function vParse(text){
+  // This is now only a fallback — real parsing done by Claude on server
+  // Called only if server parse fails
+  const r={name:"",addr:"",work:text,workType:"General",date:tdayV(),end:"",karigars:[]};
+  return r;
+}
+
+function vShowParsed(r){
+  const types=["Electrical","Plumbing","Civil","Carpentry","Painting","Fabrication","General"];
+  const fields=[
+    {key:"vf-name", label:"Site name",  val:r.name,     type:"text", ph:"e.g. Gupta Residency"},
+    {key:"vf-addr", label:"Address",    val:r.addr,     type:"text", ph:"e.g. Sector 22, Chandigarh"},
+    {key:"vf-work", label:"Work",       val:r.work,     type:"area", ph:"Describe work"},
+    {key:"vf-type", label:"Work type",  val:r.workType, type:"sel",  ph:""},
+    {key:"vf-date", label:"Start date", val:r.date,     type:"date", ph:""},
+    {key:"vf-end",  label:"Complete by",val:r.end,      type:"date", ph:""},
+  ];
+  document.getElementById("v-parsed-fields").innerHTML=fields.map(f=>`<div class="pc-row">
+    <div class="pc-label">${f.label}</div>
+    <div style="flex:1">${
+      f.type==="sel"?`<select class="pc-input" id="${f.key}">${types.map(t=>`<option${r.workType===t?" selected":""}>${t}</option>`).join("")}</select>`:
+      f.type==="area"?`<textarea class="pc-input" id="${f.key}" style="height:52px;resize:none">${f.val}</textarea>`:
+      f.type==="date"?`<input class="pc-input" id="${f.key}" type="date" value="${f.val}">`:
+      `<input class="pc-input" id="${f.key}" value="${f.val||""}" placeholder="${f.ph}">`
+    }</div></div>`).join("");
+  vSelK=[...r.karigars];
+  document.getElementById("v-k-select").innerHTML=D.karigars.map(k=>`<div class="k-vchip ${vSelK.includes(k.id)?"sel":""}" id="vc-${k.id}" onclick="vTogK(${k.id})">${k.name.split(" ")[0]} · ${k.skill}</div>`).join("")||`<div style="font-size:12px;color:#888">No karigar added yet.</div>`;
+  document.getElementById("v-parsed-card").classList.add("show");
+
+  // wire retry button
+  const rb=document.getElementById("retry-btn");
+  if(rb){
+    rb.onmousedown=vStartRec; rb.ontouchstart=vStartRec;
+    rb.onmouseup=vStopRec;   rb.ontouchend=vStopRec;
+    rb.onmouseleave=vStopRec;
+  }
+}
+
+function vTogK(id){
+  const el=document.getElementById("vc-"+id);
+  if(vSelK.includes(id)){vSelK=vSelK.filter(x=>x!==id);el.classList.remove("sel");}
+  else{vSelK.push(id);el.classList.add("sel");}
+}
+
+async function vConfirm(){
+  const name=(document.getElementById("vf-name")||{}).value?.trim();
+  const addr=(document.getElementById("vf-addr")||{}).value?.trim();
+  const work=(document.getElementById("vf-work")||{}).value?.trim();
+  if(!name){vToast("Please enter site name");return;}
+  if(!addr){vToast("Please enter address");return;}
+  if(!work){vToast("Please enter work description");return;}
+  const body={name,addr,work,type:document.getElementById("vf-type").value,date:document.getElementById("vf-date").value||tdayV(),end:document.getElementById("vf-end").value,addedBy:(me?me.name:"Staff")+" (voice)"};
+  const r=await callAPI("/api/site/add",body);
+  const site=r&&r.ok?r.site:{id:Date.now(),...body,karigar:[],pct:0,issue:"none",note:"",status:"pending",photos:[]};
+  D.sites.push(site);
+  if(vSelK.length){
+    await callAPI("/api/assign",{siteId:site.id,karigarIds:vSelK,by:me?me.name:""});
+    vSelK.forEach(kid=>{const k=D.karigars.find(x=>x.id===kid);if(k){k.free=false;k.siteId=site.id;}});
+    site.karigar=vSelK;site.status="assigned";
+  }
+  const names=vSelK.map(id=>D.karigars.find(k=>k.id===id)?.name.split(" ")[0]).filter(Boolean);
+  vSites.unshift({...site,assignedNames:names,addedAt:new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})});
+  vRenderSites();
+  vToast("Site added!"+(names.length?" WA sent to "+names.join(", "):""));
+  vReset();
+  renderSites();renderKarigars();renderPending();
+}
+
+function vReset(){
+  vParsed=null;vSelK=[];vAudioChunks=[];
+  document.getElementById("v-parsed-card").classList.remove("show");
+  document.getElementById("v-transcript").classList.remove("show");
+  document.getElementById("v-transcript").textContent="";
+  document.getElementById("mic-status").textContent="Hold to record";
+  document.getElementById("mic-hint").textContent="Hold the mic button and speak. Release when done.";
+  document.getElementById("mic-timer").textContent="";
+}
+
+function vRenderSites(){
+  if(!vSites.length)return;
+  document.getElementById("v-sites-section").style.display="block";
+  document.getElementById("v-sites-list").innerHTML=vSites.map(s=>`<div class="v-site-mini">
+    <div style="display:flex;align-items:center;justify-content:space-between"><div class="vsm-name">${s.name}</div><span class="badge b-green">Added ✓</span></div>
+    <div class="vsm-sub">${s.addr} · ${s.type||""}</div>
+    <div style="font-size:12px;color:#444;margin-top:3px">📋 ${s.work}</div>
+    ${s.assignedNames&&s.assignedNames.length?`<div class="vsm-k">👷 ${s.assignedNames.join(", ")} — WA sent</div>`:""}
+    <div style="font-size:11px;color:#aaa;margin-top:3px">Voice · ${s.addedAt}</div>
+  </div>`).join("");
+}
+
+function tdayV(){return new Date().toISOString().split("T")[0];}
+function vToast(msg){const el=document.getElementById("v-toast");if(!el)return;el.textContent=msg;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),3000);}
+</script>
+<div class="toast-v" id="v-toast"></div>
+</body>
+</html>
 const WORK_MAP={bijli:"Electrical",electric:"Electrical",wiring:"Electrical",mcb:"Electrical",paani:"Plumbing",plumbing:"Plumbing",pipe:"Plumbing",civil:"Civil",ceiling:"Civil","false ceiling":"Civil",construction:"Civil",carpentry:"Carpentry",wood:"Carpentry",furniture:"Carpentry",painting:"Painting",paint:"Painting",colour:"Painting",color:"Painting",fabrication:"Fabrication",welding:"Fabrication"};
 
 let vListening=false, vRecog=null, vParsed=null, vSelK=[], vSites=[];

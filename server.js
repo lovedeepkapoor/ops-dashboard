@@ -9,13 +9,45 @@ const path        = require("path");
 const querystring = require("querystring");
 
 const C = {
-  PORT:   process.env.PORT           || 3000,
-  SID:    process.env.TWILIO_SID     || "",
-  TOKEN:  process.env.TWILIO_TOKEN   || "",
-  FROM:   process.env.TWILIO_FROM    || "whatsapp:+14155238886",
-  OWNER:  process.env.OWNER_PHONE    || "",
-  NOTIFY: (process.env.NOTIFY_PHONES || "").split(",").filter(Boolean),
+  PORT:       process.env.PORT            || 3000,
+  SID:        process.env.TWILIO_SID      || "",
+  TOKEN:      process.env.TWILIO_TOKEN    || "",
+  FROM:       process.env.TWILIO_FROM     || "whatsapp:+14155238886",
+  OWNER:      process.env.OWNER_PHONE     || "",
+  NOTIFY:     (process.env.NOTIFY_PHONES  || "").split(",").filter(Boolean),
+  OPENAI_KEY: process.env.OPENAI_API_KEY  || "",
 };
+
+// ── OPENAI HELPER ─────────────────────────────────────────────
+function openaiRequest(urlPath, method, body, contentType) {
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: "api.openai.com", path:urlPath, method,
+      headers: { "Authorization":`Bearer ${C.OPENAI_KEY}`, "Content-Type":contentType, "Content-Length":body.length }
+    }, res => { let d=""; res.on("data",c=>d+=c); res.on("end",()=>resolve(d)); });
+    req.on("error", reject); req.write(body); req.end();
+  });
+}
+
+// ── MULTIPART PARSER ──────────────────────────────────────────
+function idxOf(buf,search,start=0){for(let i=start;i<=buf.length-search.length;i++){let ok=true;for(let j=0;j<search.length;j++){if(buf[i+j]!==search[j]){ok=false;break;}}if(ok)return i;}return -1;}
+function splitMultipart(body,boundary){
+  const parts=[],delim=Buffer.from("--"+boundary),endM=Buffer.from("--"+boundary+"--");
+  let pos=0;
+  while(pos<body.length){
+    const start=idxOf(body,delim,pos);if(start===-1)break;
+    pos=start+delim.length+2;
+    if(body.slice(start,start+endM.length).equals(endM))break;
+    const hdrEnd=idxOf(body,Buffer.from("\r\n\r\n"),pos);if(hdrEnd===-1)break;
+    const hdr=body.slice(pos,hdrEnd).toString();
+    const next=idxOf(body,delim,hdrEnd+4);
+    const data=body.slice(hdrEnd+4,next===-1?body.length:next-2);
+    const nm=hdr.match(/name="([^"]+)"/),fm=hdr.match(/filename="([^"]+)"/);
+    parts.push({name:nm?nm[1]:"",filename:fm?fm[1]:"",data});
+    pos=next===-1?body.length:next;
+  }
+  return parts;
+}
 
 // ── STORE ────────────────────────────────────────────────────
 const store = {
@@ -291,6 +323,108 @@ http.createServer(async (req, res) => {
       res.writeHead(200,{"Content-Type":"text/xml"});
       res.end(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${reply}</Message></Response>`);
     }); return;
+  }
+
+  if (method==="POST" && url==="/api/transcribe") {
+    const chunks=[];
+    req.on("data",c=>chunks.push(c));
+    req.on("end", async()=>{
+      try {
+        const body     = Buffer.concat(chunks);
+        const ctype    = req.headers["content-type"]||"";
+        const boundary = ctype.split("boundary=")[1];
+        if (!boundary) return json(res,{ok:false,error:"No boundary"},400);
+
+        // ── Parse multipart ───────────────────────────────────
+        const parts = splitMultipart(body, boundary);
+        const audioPart   = parts.find(p=>p.name==="audio");
+        const karPart     = parts.find(p=>p.name==="karigars");
+        if (!audioPart) return json(res,{ok:false,error:"No audio found"},400);
+
+        const karigars = karPart ? JSON.parse(karPart.data.toString()) : [];
+        const fname    = audioPart.filename||"audio.webm";
+        const ext      = fname.split(".").pop()||"webm";
+
+        if (!C.OPENAI_KEY) return json(res,{ok:false,error:"OPENAI_API_KEY not set in Railway variables"},500);
+
+        // ── Step 1: Whisper transcription ─────────────────────
+        const oaBoundary = "OAB"+Date.now();
+        const oaBody = Buffer.concat([
+          Buffer.from(`--${oaBoundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.${ext}"\r\nContent-Type: audio/${ext}\r\n\r\n`),
+          audioPart.data,
+          Buffer.from(`\r\n--${oaBoundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\nwhisper-1`),
+          Buffer.from(`\r\n--${oaBoundary}\r\nContent-Disposition: form-data; name="language"\r\n\r\nhi`),
+          Buffer.from(`\r\n--${oaBoundary}--`),
+        ]);
+
+        const whisperRaw = await openaiRequest("/v1/audio/transcriptions","POST",oaBody,`multipart/form-data; boundary=${oaBoundary}`);
+        const whisperData = JSON.parse(whisperRaw);
+        if (!whisperData.text) return json(res,{ok:false,error:whisperData.error?.message||"Whisper failed"},500);
+
+        const transcript = whisperData.text;
+        console.log(`[Whisper] "${transcript}"`);
+
+        // ── Step 2: Claude parses the Hindi/Hinglish text ─────
+        const today = new Date().toISOString().split("T")[0];
+        const karigarList = karigars.map(k=>`- ${k.name} (ID:${k.id}, skill:${k.skill})`).join("\n")||"No karigars registered yet.";
+
+        const prompt = `You are a construction site management assistant in India. A staff member spoke in Hindi, English or Hinglish and it was transcribed. Extract the site details.
+
+Transcript: "${transcript}"
+
+Available karigars:
+${karigarList}
+
+Today's date: ${today}
+
+Extract and return ONLY a JSON object with these exact fields:
+{
+  "name": "site or client name (e.g. Rahul ka ghar → Rahul Residence)",
+  "addr": "address/location (e.g. Sector 32, Chandigarh)",
+  "work": "what work needs to be done in English (translate from Hindi if needed)",
+  "workType": "one of: Electrical, Plumbing, Civil, Carpentry, Painting, Fabrication, General",
+  "date": "start date in YYYY-MM-DD format or today ${today} if not mentioned",
+  "end": "completion date in YYYY-MM-DD format or empty string if not mentioned",
+  "karigars": [array of karigar IDs from the list above that match names mentioned, empty array if none mentioned]
+}
+
+Rules:
+- Translate all Hindi to English for name, addr, work fields
+- "राहुल के घर" → name: "Rahul Residence"  
+- "सेक्टर 32" → addr: "Sector 32"
+- "वर्टिकल गार्डन" → work: "Vertical garden installation"
+- "चंडीगढ़" → "Chandigarh"
+- Match karigar names even if mentioned in Hindi or partial
+- Return ONLY the JSON, no explanation, no markdown`;
+
+        const claudeRaw = await openaiRequest("/v1/chat/completions","POST",
+          Buffer.from(JSON.stringify({
+            model:"gpt-4o-mini",
+            messages:[{role:"user",content:prompt}],
+            temperature:0.1,
+            max_tokens:400,
+          })),
+          "application/json"
+        );
+        const claudeData = JSON.parse(claudeRaw);
+        let parsed = null;
+        try {
+          const content = claudeData.choices?.[0]?.message?.content||"{}";
+          const clean   = content.replace(/```json|```/g,"").trim();
+          parsed        = JSON.parse(clean);
+        } catch(e) {
+          console.error("Parse error:",e);
+        }
+
+        addLog(`Voice: "${transcript.slice(0,50)}..."`, "info");
+        return json(res,{ok:true, text:transcript, parsed});
+
+      } catch(e) {
+        console.error("Transcribe error:",e);
+        return json(res,{ok:false,error:e.message},500);
+      }
+    });
+    return;
   }
 
   if (url.startsWith("/api/")) {
